@@ -1,0 +1,74 @@
+<class
+    name = "zmn_proto"
+    signature = "1"
+    title = "Basic messaging for zmon.it"
+    script = "zproto_codec_c"
+    package_dir = "../include"
+    source_dir = "."
+    export_header = "zmproto.h"
+    >
+
+<include filename = "../license.xml" />
+
+<!-- each message can be extended, put things to hash -->
+<header>
+    <field name = "time" type = "number" size = "8">
+        Time when message was generated
+    </field>
+    <field name = "ttl" type = "number" size = "4">
+        Time to live, after $current time > time - ttl, message is droped
+    </field>
+    <field name = "ext" type = "hash" >
+        Additional extended informations for the message
+    </field>
+    <field name = "device" type = "uuid">
+        Device universal unique identifier
+    </field>
+
+</header>
+
+<message
+    name = "METRIC"
+    id = "1"
+    >
+
+    <field name = "type" type = "string">
+        Metric name, e.g.: "temperature", "humidity", "power.load", ...
+    </field>
+
+    <field name = "value" type = "string">
+        Metric value, e.g.: "25.323" or "900".
+    </field>
+
+    <field name = "unit" type = "string">
+        Metric unit, e.g.: "C" or "F" for temperature, "W" or "kW" for realpower etc... 
+    </field>
+</message>
+
+<message
+    name = "ALERT"
+    id = "2"
+    >
+    <field name = "rule" type = "string">
+        Identifier of the rule which triggers this alert.
+    </field>
+
+    <field name = "state" type = "number" size = "1">
+        Alert is active (value 1) or resolved (value 0).
+    </field>
+
+    <field name = "severity" type = "number" size = "1">
+        Alert is critical (value 1) or not (value 0).
+    </field>
+
+    <field name = "description" type = "string">
+        Alert description.
+    </field>
+</message>
+
+<message
+    name = "DEVICE"
+    id = "3">
+</message>
+
+</class>

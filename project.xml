@@ -1,0 +1,22 @@
+<project
+    name = "zm-proto"
+    description = "Basic messaging for zmon.it"
+    script = "zproject.gsl"
+    email = "N/A"
+    repository = "https://github.com/zmonit/zm-proto"
+    header = "zmproto.h"
+    >
+
+    <target name = "travis" />
+
+    <include filename = "license.xml" />
+    <version major = "0" minor = "1" patch = "0" />
+    <abi current = "0" revision = "1" age = "0" />
+
+    <use project = "czmq" />
+    <use project = "malamute" min_major = "1" />
+
+    <class name = "zm_proto" state = "stable" >Basic messages for zmon.it</class>
+    <model name = "zm_proto" codec="zproto_codec_c" />
+
+</project>

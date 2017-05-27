@@ -12,6 +12,9 @@
 
 <!-- each message can be extended, put things to hash -->
 <header>
+    <field name = "device" type = "uuid">
+        Device universal unique identifier
+    </field>
     <field name = "time" type = "number" size = "8">
         Time when message was generated
     </field>
@@ -21,10 +24,6 @@
     <field name = "ext" type = "hash" >
         Additional extended informations for the message
     </field>
-    <field name = "device" type = "uuid">
-        Device universal unique identifier
-    </field>
-
 </header>
 
 <message

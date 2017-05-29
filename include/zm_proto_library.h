@@ -22,6 +22,7 @@
 
 //  External dependencies
 #include <czmq.h>
+#include <malamute.h>
 
 //  ZM_PROTO version macros for compile-time API detection
 #define ZM_PROTO_VERSION_MAJOR 1

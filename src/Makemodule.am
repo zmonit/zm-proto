@@ -48,6 +48,13 @@ endif
 
 src_libzm_proto_la_LIBADD = ${project_libs}
 
+if ENABLE_ZMPUB
+bin_PROGRAMS += src/zmpub
+src_zmpub_CPPFLAGS = ${AM_CPPFLAGS}
+src_zmpub_LDADD = ${program_libs}
+src_zmpub_SOURCES = src/zmpub.c
+endif #ENABLE_ZMPUB
+
 if ENABLE_ZM_PROTO_SELFTEST
 check_PROGRAMS += src/zm_proto_selftest
 noinst_PROGRAMS += src/zm_proto_selftest
@@ -58,6 +65,7 @@ endif #ENABLE_ZM_PROTO_SELFTEST
 
 # define custom target for all products of /src
 src: \
+		src/zmpub \
 		src/zm_proto_selftest \
 		src/libzm_proto.la
 

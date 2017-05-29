@@ -15,9 +15,11 @@
     <abi current = "1" revision = "1" age = "0" />
 
     <use project = "czmq" />
+    <use project = "malamute" />
 
     <class name = "zm_proto" state = "stable" >Basic messages for zmon.it</class>
     <model name = "zm_proto" codec="zproto_codec_c" />
     <class name = "zm_proto_utils" state = "stable" >Various utils to work with zm_proto messages</class>
-    
+    <main name = "zmpub" >Helper tool to publish zm-proto messages on a stream</main>
+
 </project>

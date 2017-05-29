@@ -6,7 +6,7 @@
 all-local: doc
 
 # Public programs ("main" tags in project.xml), auto-regenerated:
-MAN1 =
+MAN1 = zmpub.1
 # Public classes ("class" tags in project.xml), auto-regenerated:
 MAN3 = zm_proto.3
 # Project overview, written by a human after initial skeleton:
@@ -67,6 +67,10 @@ GENERATED_DOCS =
 GENERATED_DOCS += zm_proto.txt zm_proto.doc
 zm_proto.txt: $(top_srcdir)/src/zm_proto.c
 	"$(srcdir)/mkman" "zm_proto" "$(builddir)/zm_proto.txt" "$(srcdir)/.."
+
+GENERATED_DOCS += zmpub.txt zmpub.doc
+zmpub.txt: $(top_srcdir)/src/zmpub.c
+	"$(srcdir)/mkman" "zmpub" "$(builddir)/zmpub.txt" "$(srcdir)/.."
 
 
 clean:

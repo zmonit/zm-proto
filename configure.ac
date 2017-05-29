@@ -53,6 +53,7 @@ AC_PROG_AWK
 PKG_PROG_PKG_CONFIG
 
 # Code coverage
+AC_MSG_CHECKING([whether to enable GCov])
 AC_ARG_WITH(gcov, [AS_HELP_STRING([--with-gcov=yes/no],
                   [With GCC Code Coverage reporting])],
                   [ZM_PROTO_GCOV="$withval"])
@@ -64,8 +65,27 @@ if test "x${ZM_PROTO_GCOV}" == "xyes"; then
         CFLAGS="${CFLAGS} ${ZM_PROTO_ORIG_CFLAGS}"
     fi
     AM_CONDITIONAL(WITH_GCOV, true)
+    AC_MSG_RESULT([yes])
 else
     AM_CONDITIONAL(WITH_GCOV, false)
+    AC_MSG_RESULT([no])
+fi
+
+# Memory mis-use detection
+AC_MSG_CHECKING([whether to enable ASan])
+AC_ARG_ENABLE(address-sanitizer, [AS_HELP_STRING([--enable-address-sanitizer=yes/no],
+                  [Build with GCC Address Sanitizer instrumentation])],
+                  [ZM_PROTO_ASAN="$enableval"])
+
+if test "x${ZM_PROTO_ASAN}" == "xyes"; then
+    CFLAGS="${CFLAGS} -fsanitize=address"
+    CXXFLAGS="${CXXFLAGS} -fsanitize=address"
+
+    AM_CONDITIONAL(ENABLE_ASAN, true)
+    AC_MSG_RESULT([yes])
+else
+    AM_CONDITIONAL(ENABLE_ASAN, false)
+    AC_MSG_RESULT([no])
 fi
 
 # Set pkgconfigdir
@@ -456,6 +476,16 @@ else
 fi
      AC_MSG_RESULT([$enable_dist_cmakefiles])])
 AM_CONDITIONAL(ENABLE_DIST_CMAKEFILES, test "x$enable_dist_cmakefiles" = "xyes")
+
+# Check for zmpub intent
+AC_ARG_ENABLE([zmpub],
+    AS_HELP_STRING([--enable-zmpub],
+        [Compile and install 'zmpub' [default=yes]]),
+    [enable_zmpub=$enableval],
+    [enable_zmpub=yes])
+
+AM_CONDITIONAL([ENABLE_ZMPUB], [test x$enable_zmpub != xno])
+AM_COND_IF([ENABLE_ZMPUB], [AC_MSG_NOTICE([ENABLE_ZMPUB defined])])
 
 # Check for zm_proto_selftest intent
 AC_ARG_ENABLE([zm_proto_selftest],

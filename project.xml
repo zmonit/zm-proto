@@ -18,5 +18,6 @@
 
     <class name = "zm_proto" state = "stable" >Basic messages for zmon.it</class>
     <model name = "zm_proto" codec="zproto_codec_c" />
+    <main name = "zmpub" >Helper tool to publish zm-proto messages on a stream</main>
 
 </project>

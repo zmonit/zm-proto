@@ -92,5 +92,9 @@ make install DESTDIR=%{buildroot} %{?_smp_mflags}
 find %{buildroot} -name '*.a' | xargs rm -f
 find %{buildroot} -name '*.la' | xargs rm -f
 
+%files
+%defattr(-,root,root)
+%{_bindir}/zmpub
+%{_mandir}/man1/zmpub*
 
 %changelog

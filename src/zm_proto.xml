@@ -1,5 +1,5 @@
 <class
-    name = "zmn_proto"
+    name = "zm_proto"
     signature = "1"
     title = "Basic messaging for zmon.it"
     script = "zproto_codec_c"

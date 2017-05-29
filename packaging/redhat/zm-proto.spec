@@ -39,6 +39,7 @@ BuildRequires:  pkgconfig
 BuildRequires:  xmlto
 BuildRequires:  zeromq-devel
 BuildRequires:  czmq-devel
+BuildRequires:  malamute-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -64,6 +65,7 @@ Group:          System/Libraries
 Requires:       libzm_proto1 = %{version}
 Requires:       zeromq-devel
 Requires:       czmq-devel
+Requires:       malamute-devel
 
 %description devel
 basic messaging for zmon.it development tools

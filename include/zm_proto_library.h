@@ -62,10 +62,13 @@
 //  These classes are stable or legacy and built in all releases
 typedef struct _zm_proto_t zm_proto_t;
 #define ZM_PROTO_T_DEFINED
+typedef struct _zm_proto_utils_t zm_proto_utils_t;
+#define ZM_PROTO_UTILS_T_DEFINED
 
 
 //  Public classes, each with its own header file
 #include "zm_proto.h"
+#include "zm_proto_utils.h"
 
 #ifdef ZM_PROTO_BUILD_DRAFT_API
 //  Self test for private classes

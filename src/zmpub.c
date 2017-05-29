@@ -101,6 +101,7 @@ int main (int argc, char *argv [])
     char *address = zsys_sprintf ("zmpub-%s", zuuid_str_canonical (uuid));
     zuuid_destroy (&uuid);
     int r = mlm_client_connect (client, endpoint, 3000, address);
+    assert (r != -1);
     zstr_free (&address);
 
     zm_proto_t *msg = zm_proto_new ();
@@ -117,14 +118,7 @@ int main (int argc, char *argv [])
         char *unit = argv [argn+5];
 
         zm_proto_set_id (msg, ZM_PROTO_METRIC);
-        zuuid_t *uuid = zuuid_new ();
-        r = zuuid_set_str (uuid, device);
-        if (r == -1) {
-            zsys_error ("given device %s is not valid uuid!", device);
-            zuuid_destroy (&uuid);
-            exit (EXIT_FAILURE);
-        }
-        zm_proto_set_device (msg, uuid);
+        zm_proto_set_device (msg, device);
 
         char *subject = zsys_sprintf ("%s@%s", type, device);
 
@@ -134,7 +128,9 @@ int main (int argc, char *argv [])
         zm_proto_set_value (msg, value);
         zm_proto_set_unit (msg, unit);
 
-        zm_proto_msend (msg, client, subject);
+        zmsg_t *zmsg = zmsg_new ();
+        zm_proto_send (msg, zmsg);
+        mlm_client_send (client, subject, &zmsg);
         zstr_free (&subject);
 
     }

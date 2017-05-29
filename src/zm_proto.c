@@ -33,6 +33,7 @@
 #endif
 
 #include "../include/zm_proto.h"
+#include <malamute.h>
 
 //  Structure of our class
 
@@ -421,18 +422,10 @@ zm_proto_recv (zm_proto_t *self, zsock_t *input)
 }
 
 
-//  --------------------------------------------------------------------------
-//  Send the zm_proto to the socket. Does not destroy it. Returns 0 if
-//  OK, else -1.
-
-int
-zm_proto_send (zm_proto_t *self, zsock_t *output)
-{
+static void
+s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_p) {
     assert (self);
-    assert (output);
-
-    if (zsock_type (output) == ZMQ_ROUTER)
-        zframe_send (&self->routing_id, output, ZFRAME_MORE + ZFRAME_REUSE);
+    assert (frame_p);
 
     size_t frame_size = 2 + 1;          //  Signature and message ID
     switch (self->id) {
@@ -493,12 +486,12 @@ zm_proto_send (zm_proto_t *self, zsock_t *output)
             break;
     }
     //  Now serialize message into the frame
-    zmq_msg_t frame;
+    zmq_msg_t frame = *frame_p;
     zmq_msg_init_size (&frame, frame_size);
     self->needle = (byte *) zmq_msg_data (&frame);
     PUT_NUMBER2 (0xAAA0 | 1);
     PUT_NUMBER1 (self->id);
-    size_t nbr_frames = 1;              //  Total number of frames to send
+    *nbr_frames_p = 1;              //  Total number of frames to send
 
     switch (self->id) {
         case ZM_PROTO_METRIC:
@@ -572,12 +565,52 @@ zm_proto_send (zm_proto_t *self, zsock_t *output)
             break;
 
     }
+}
+
+//  --------------------------------------------------------------------------
+//  Send the zm_proto to the socket. Does not destroy it. Returns 0 if
+//  OK, else -1.
+
+int
+zm_proto_send (zm_proto_t *self, zsock_t *output)
+{
+    assert (self);
+    assert (output);
+
+    if (zsock_type (output) == ZMQ_ROUTER)
+        zframe_send (&self->routing_id, output, ZFRAME_MORE + ZFRAME_REUSE);
+
+    zmq_msg_t frame;
+    size_t nbr_frames;
+    s_zm_proto_to_zmq_msg (self, &frame, &nbr_frames);
+
     //  Now send the data frame
     zmq_msg_send (&frame, zsock_resolve (output), --nbr_frames? ZMQ_SNDMORE: 0);
 
     return 0;
 }
 
+#if defined (MLM_VERSION)
+//  --------------------------------------------------------------------------
+//  Publish the zm_proto to malamute broker. Does not destroy it. Returns 0 if
+//  OK, else -1.
+
+int
+zm_proto_msend (zm_proto_t *self, mlm_client_t *client, const char* subject) {
+    assert (self);
+    assert (client);
+    assert (subject);
+
+    zmq_msg_t frame;
+    size_t nbr_frames;
+    s_zm_proto_to_zmq_msg (self, &frame, &nbr_frames);
+    assert (nbr_frames != 1024);    // to avoid unused variable error
+
+    zmsg_t *msg = zmsg_new ();
+    zmsg_addmem (msg, zmq_msg_data (&frame), zmq_msg_size (&frame));
+    return mlm_client_send (client, subject, &msg);
+}
+#endif
 
 //  --------------------------------------------------------------------------
 //  Print contents of message to stdout

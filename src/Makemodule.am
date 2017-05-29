@@ -15,10 +15,12 @@ pkgconfig_DATA = src/libzm_proto.pc
 include_HEADERS = \
     include/zmproto.h \
     include/zm_proto.h \
+    include/zm_proto_utils.h \
     include/zm_proto_library.h
 
 src_libzm_proto_la_SOURCES = \
     src/zm_proto.c \
+    src/zm_proto_utils.c \
     src/platform.h
 
 if ENABLE_DRAFTS

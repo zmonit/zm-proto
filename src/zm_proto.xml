@@ -6,13 +6,14 @@
     package_dir = "../include"
     source_dir = "."
     export_header = "zmproto.h"
+    virtual = "1"
     >
 
 <include filename = "../license.xml" />
 
 <!-- each message can be extended, put things to hash -->
 <header>
-    <field name = "device" type = "uuid">
+    <field name = "device" type = "string">
         Device universal unique identifier
     </field>
     <field name = "time" type = "number" size = "8">

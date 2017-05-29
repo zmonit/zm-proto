@@ -27,7 +27,7 @@
 /*  These are the zm_proto messages:
 
     METRIC - 
-        device              uuid        Device universal unique identifier
+        device              string      Device universal unique identifier
         time                number 8    Time when message was generated
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
@@ -36,7 +36,7 @@
         unit                string      Metric unit, e.g.: "C" or "F" for temperature, "W" or "kW" for realpower etc...
 
     ALERT - 
-        device              uuid        Device universal unique identifier
+        device              string      Device universal unique identifier
         time                number 8    Time when message was generated
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
@@ -46,7 +46,7 @@
         description         string      Alert description.
 
     DEVICE - 
-        device              uuid        Device universal unique identifier
+        device              string      Device universal unique identifier
         time                number 8    Time when message was generated
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
@@ -82,24 +82,16 @@ void
 zm_proto_t *
     zm_proto_dup (zm_proto_t *other);
 
-//  Receive a zm_proto from the socket. Returns 0 if OK, -1 if
-//  the read was interrupted, or -2 if the message is malformed.
-//  Blocks if there is no message waiting.
+//  Deserialize a zm_proto from the specified message, popping
+//  as many frames as needed. Returns 0 if OK, -1 if the read was
+//  interrupted, or -2 if the message is malformed.
 int
-    zm_proto_recv (zm_proto_t *self, zsock_t *input);
+    zm_proto_recv (zm_proto_t *self, zmsg_t *input);
 
-//  Send the zm_proto to the output socket, does not destroy it
+//  Serialize and append the zm_proto to the specified message
 int
-    zm_proto_send (zm_proto_t *self, zsock_t *output);
+    zm_proto_send (zm_proto_t *self, zmsg_t *output);
 
-#if defined (MLM_VERSION)
-//  --------------------------------------------------------------------------
-//  Publish the zm_proto to malamute broker. Does not destroy it. Returns 0 if
-//  OK, else -1.
-
-int
-zm_proto_msend (zm_proto_t *self, mlm_client_t *client, const char* subject);
-#endif
 
 //  Print contents of message to stdout
 void
@@ -120,13 +112,10 @@ const char *
     zm_proto_command (zm_proto_t *self);
 
 //  Get/set the device field
-zuuid_t *
+const char *
     zm_proto_device (zm_proto_t *self);
 void
-    zm_proto_set_device (zm_proto_t *self, zuuid_t *uuid);
-//  Get the device field and transfer ownership to caller
-zuuid_t *
-    zm_proto_get_device (zm_proto_t *self);
+    zm_proto_set_device (zm_proto_t *self, const char *value);
 
 //  Get/set the time field
 uint64_t

@@ -33,7 +33,6 @@
 #endif
 
 #include "../include/zm_proto.h"
-#include <malamute.h>
 
 //  Structure of our class
 
@@ -42,7 +41,7 @@ struct _zm_proto_t {
     int id;                             //  zm_proto message ID
     byte *needle;                       //  Read/write pointer for serialization
     byte *ceiling;                      //  Valid upper limit for read pointer
-    zuuid_t *device;                    //  Device universal unique identifier
+    char device [256];                  //  Device universal unique identifier
     uint64_t time;                      //  Time when message was generated
     uint32_t ttl;                       //  Time to live, after $current time > time - ttl, message is droped
     zhash_t *ext;                       //  Additional extended informations for the message
@@ -229,7 +228,6 @@ zm_proto_destroy (zm_proto_t **self_p)
 
         //  Free class properties
         zframe_destroy (&self->routing_id);
-        zuuid_destroy (&self->device);
         zhash_destroy (&self->ext);
 
         //  Free object itself
@@ -272,37 +270,25 @@ zm_proto_dup (zm_proto_t *other)
 }
 
 //  --------------------------------------------------------------------------
-//  Receive a zm_proto from the socket. Returns 0 if OK, -1 if
-//  the recv was interrupted, or -2 if the message is malformed.
-//  Blocks if there is no message waiting.
-
+//  Deserialize a zm_proto from the specified message, popping
+//  as many frames as needed. Returns 0 if OK, -1 if the recv was interrupted,
+//  or -2 if the message is malformed.
 int
-zm_proto_recv (zm_proto_t *self, zsock_t *input)
+zm_proto_recv (zm_proto_t *self, zmsg_t *input)
 {
     assert (input);
     int rc = 0;
-    zmq_msg_t frame;
-    zmq_msg_init (&frame);
 
-    if (zsock_type (input) == ZMQ_ROUTER) {
-        zframe_destroy (&self->routing_id);
-        self->routing_id = zframe_recv (input);
-        if (!self->routing_id || !zsock_rcvmore (input)) {
-            zsys_warning ("zm_proto: no routing ID");
-            rc = -1;            //  Interrupted
-            goto malformed;
-        }
-    }
-    int size;
-    size = zmq_msg_recv (&frame, zsock_resolve (input), 0);
-    if (size == -1) {
-        zsys_warning ("zm_proto: interrupted");
+
+    zframe_t *frame = zmsg_pop (input);
+    if (!frame) {
+        zsys_warning ("zm_proto: missing frames in message");
         rc = -1;                //  Interrupted
         goto malformed;
     }
     //  Get and check protocol signature
-    self->needle = (byte *) zmq_msg_data (&frame);
-    self->ceiling = self->needle + zmq_msg_size (&frame);
+    self->needle = zframe_data (frame);
+    self->ceiling = self->needle + zframe_size (frame);
 
     uint16_t signature;
     GET_NUMBER2 (signature);
@@ -316,14 +302,7 @@ zm_proto_recv (zm_proto_t *self, zsock_t *input)
 
     switch (self->id) {
         case ZM_PROTO_METRIC:
-            if (self->needle + ZUUID_LEN > (self->ceiling)) {
-                zsys_warning ("zm_proto: device is invalid");
-                rc = -2;        //  Malformed
-                goto malformed;
-            }
-            zuuid_destroy (&self->device);
-            self->device = zuuid_new_from (self->needle);
-            self->needle += ZUUID_LEN;
+            GET_STRING (self->device);
             GET_NUMBER8 (self->time);
             GET_NUMBER4 (self->ttl);
             {
@@ -347,14 +326,7 @@ zm_proto_recv (zm_proto_t *self, zsock_t *input)
             break;
 
         case ZM_PROTO_ALERT:
-            if (self->needle + ZUUID_LEN > (self->ceiling)) {
-                zsys_warning ("zm_proto: device is invalid");
-                rc = -2;        //  Malformed
-                goto malformed;
-            }
-            zuuid_destroy (&self->device);
-            self->device = zuuid_new_from (self->needle);
-            self->needle += ZUUID_LEN;
+            GET_STRING (self->device);
             GET_NUMBER8 (self->time);
             GET_NUMBER4 (self->ttl);
             {
@@ -379,14 +351,7 @@ zm_proto_recv (zm_proto_t *self, zsock_t *input)
             break;
 
         case ZM_PROTO_DEVICE:
-            if (self->needle + ZUUID_LEN > (self->ceiling)) {
-                zsys_warning ("zm_proto: device is invalid");
-                rc = -2;        //  Malformed
-                goto malformed;
-            }
-            zuuid_destroy (&self->device);
-            self->device = zuuid_new_from (self->needle);
-            self->needle += ZUUID_LEN;
+            GET_STRING (self->device);
             GET_NUMBER8 (self->time);
             GET_NUMBER4 (self->ttl);
             {
@@ -411,26 +376,28 @@ zm_proto_recv (zm_proto_t *self, zsock_t *input)
             rc = -2;            //  Malformed
             goto malformed;
     }
+    zframe_destroy (&frame);
     //  Successful return
-    zmq_msg_close (&frame);
     return rc;
 
     //  Error returns
     malformed:
-        zmq_msg_close (&frame);
+        zframe_destroy (&frame);
         return rc;              //  Invalid message
 }
 
 
-static void
-s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_p) {
+//  --------------------------------------------------------------------------
+//  Serialize and append the zm_proto to the specified message
+int
+zm_proto_send (zm_proto_t *self, zmsg_t *output)
+{
     assert (self);
-    assert (frame_p);
-
+    assert (output);
     size_t frame_size = 2 + 1;          //  Signature and message ID
     switch (self->id) {
         case ZM_PROTO_METRIC:
-            frame_size += ZUUID_LEN;    //  device
+            frame_size += 1 + strlen (self->device);
             frame_size += 8;            //  time
             frame_size += 4;            //  ttl
             frame_size += 4;            //  Size is 4 octets
@@ -449,7 +416,7 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             frame_size += 1 + strlen (self->unit);
             break;
         case ZM_PROTO_ALERT:
-            frame_size += ZUUID_LEN;    //  device
+            frame_size += 1 + strlen (self->device);
             frame_size += 8;            //  time
             frame_size += 4;            //  ttl
             frame_size += 4;            //  Size is 4 octets
@@ -469,7 +436,7 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             frame_size += 1 + strlen (self->description);
             break;
         case ZM_PROTO_DEVICE:
-            frame_size += ZUUID_LEN;    //  device
+            frame_size += 1 + strlen (self->device);
             frame_size += 8;            //  time
             frame_size += 4;            //  ttl
             frame_size += 4;            //  Size is 4 octets
@@ -486,20 +453,14 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             break;
     }
     //  Now serialize message into the frame
-    zmq_msg_t frame = *frame_p;
-    zmq_msg_init_size (&frame, frame_size);
-    self->needle = (byte *) zmq_msg_data (&frame);
+    zframe_t *frame = zframe_new (NULL, frame_size);
+    self->needle = zframe_data (frame);
     PUT_NUMBER2 (0xAAA0 | 1);
     PUT_NUMBER1 (self->id);
-    *nbr_frames_p = 1;              //  Total number of frames to send
 
     switch (self->id) {
         case ZM_PROTO_METRIC:
-            if (self->device)
-                zuuid_export (self->device, self->needle);
-            else
-                memset (self->needle, 0, ZUUID_LEN);
-            self->needle += ZUUID_LEN;
+            PUT_STRING (self->device);
             PUT_NUMBER8 (self->time);
             PUT_NUMBER4 (self->ttl);
             if (self->ext) {
@@ -519,11 +480,7 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             break;
 
         case ZM_PROTO_ALERT:
-            if (self->device)
-                zuuid_export (self->device, self->needle);
-            else
-                memset (self->needle, 0, ZUUID_LEN);
-            self->needle += ZUUID_LEN;
+            PUT_STRING (self->device);
             PUT_NUMBER8 (self->time);
             PUT_NUMBER4 (self->ttl);
             if (self->ext) {
@@ -544,11 +501,7 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             break;
 
         case ZM_PROTO_DEVICE:
-            if (self->device)
-                zuuid_export (self->device, self->needle);
-            else
-                memset (self->needle, 0, ZUUID_LEN);
-            self->needle += ZUUID_LEN;
+            PUT_STRING (self->device);
             PUT_NUMBER8 (self->time);
             PUT_NUMBER4 (self->ttl);
             if (self->ext) {
@@ -565,52 +518,12 @@ s_zm_proto_to_zmq_msg (zm_proto_t *self, zmq_msg_t *frame_p, size_t *nbr_frames_
             break;
 
     }
-}
-
-//  --------------------------------------------------------------------------
-//  Send the zm_proto to the socket. Does not destroy it. Returns 0 if
-//  OK, else -1.
-
-int
-zm_proto_send (zm_proto_t *self, zsock_t *output)
-{
-    assert (self);
-    assert (output);
-
-    if (zsock_type (output) == ZMQ_ROUTER)
-        zframe_send (&self->routing_id, output, ZFRAME_MORE + ZFRAME_REUSE);
-
-    zmq_msg_t frame;
-    size_t nbr_frames;
-    s_zm_proto_to_zmq_msg (self, &frame, &nbr_frames);
-
-    //  Now send the data frame
-    zmq_msg_send (&frame, zsock_resolve (output), --nbr_frames? ZMQ_SNDMORE: 0);
+    //  Now store the frame data
+    zmsg_append (output, &frame);
 
     return 0;
 }
 
-#if defined (MLM_VERSION)
-//  --------------------------------------------------------------------------
-//  Publish the zm_proto to malamute broker. Does not destroy it. Returns 0 if
-//  OK, else -1.
-
-int
-zm_proto_msend (zm_proto_t *self, mlm_client_t *client, const char* subject) {
-    assert (self);
-    assert (client);
-    assert (subject);
-
-    zmq_msg_t frame;
-    size_t nbr_frames;
-    s_zm_proto_to_zmq_msg (self, &frame, &nbr_frames);
-    assert (nbr_frames != 1024);    // to avoid unused variable error
-
-    zmsg_t *msg = zmsg_new ();
-    zmsg_addmem (msg, zmq_msg_data (&frame), zmq_msg_size (&frame));
-    return mlm_client_send (client, subject, &msg);
-}
-#endif
 
 //  --------------------------------------------------------------------------
 //  Print contents of message to stdout
@@ -622,11 +535,7 @@ zm_proto_print (zm_proto_t *self)
     switch (self->id) {
         case ZM_PROTO_METRIC:
             zsys_debug ("ZM_PROTO_METRIC:");
-            zsys_debug ("    device=");
-            if (self->device)
-                zsys_debug ("        %s", zuuid_str_canonical (self->device));
-            else
-                zsys_debug ("        (NULL)");
+            zsys_debug ("    device='%s'", self->device);
             zsys_debug ("    time=%ld", (long) self->time);
             zsys_debug ("    ttl=%ld", (long) self->ttl);
             zsys_debug ("    ext=");
@@ -646,11 +555,7 @@ zm_proto_print (zm_proto_t *self)
 
         case ZM_PROTO_ALERT:
             zsys_debug ("ZM_PROTO_ALERT:");
-            zsys_debug ("    device=");
-            if (self->device)
-                zsys_debug ("        %s", zuuid_str_canonical (self->device));
-            else
-                zsys_debug ("        (NULL)");
+            zsys_debug ("    device='%s'", self->device);
             zsys_debug ("    time=%ld", (long) self->time);
             zsys_debug ("    ttl=%ld", (long) self->ttl);
             zsys_debug ("    ext=");
@@ -671,11 +576,7 @@ zm_proto_print (zm_proto_t *self)
 
         case ZM_PROTO_DEVICE:
             zsys_debug ("ZM_PROTO_DEVICE:");
-            zsys_debug ("    device=");
-            if (self->device)
-                zsys_debug ("        %s", zuuid_str_canonical (self->device));
-            else
-                zsys_debug ("        (NULL)");
+            zsys_debug ("    device='%s'", self->device);
             zsys_debug ("    time=%ld", (long) self->time);
             zsys_debug ("    ttl=%ld", (long) self->ttl);
             zsys_debug ("    ext=");
@@ -752,7 +653,8 @@ zm_proto_command (zm_proto_t *self)
 
 //  --------------------------------------------------------------------------
 //  Get/set the device field
-zuuid_t *
+
+const char *
 zm_proto_device (zm_proto_t *self)
 {
     assert (self);
@@ -760,21 +662,14 @@ zm_proto_device (zm_proto_t *self)
 }
 
 void
-zm_proto_set_device (zm_proto_t *self, zuuid_t *uuid)
+zm_proto_set_device (zm_proto_t *self, const char *value)
 {
     assert (self);
-    zuuid_destroy (&self->device);
-    self->device = zuuid_dup (uuid);
-}
-
-//  Get the device field and transfer ownership to caller
-
-zuuid_t *
-zm_proto_get_device (zm_proto_t *self)
-{
-    zuuid_t *device = self->device;
-    self->device = NULL;
-    return device;
+    assert (value);
+    if (value == self->device)
+        return;
+    strncpy (self->device, value, 255);
+    self->device [255] = 0;
 }
 
 
@@ -1010,17 +905,11 @@ zm_proto_test (bool verbose)
     zm_proto_t *self = zm_proto_new ();
     assert (self);
     zm_proto_destroy (&self);
-    //  Create pair of sockets we can send through
-    //  We must bind before connect if we wish to remain compatible with ZeroMQ < v4
-    zsock_t *output = zsock_new (ZMQ_DEALER);
+    zmsg_t *output = zmsg_new ();
     assert (output);
-    int rc = zsock_bind (output, "inproc://selftest-zm_proto");
-    assert (rc == 0);
 
-    zsock_t *input = zsock_new (ZMQ_ROUTER);
+    zmsg_t *input = zmsg_new ();
     assert (input);
-    rc = zsock_connect (input, "inproc://selftest-zm_proto");
-    assert (rc == 0);
 
 
     //  Encode/send/decode and verify each message type
@@ -1028,8 +917,7 @@ zm_proto_test (bool verbose)
     self = zm_proto_new ();
     zm_proto_set_id (self, ZM_PROTO_METRIC);
 
-    zuuid_t *metric_device = zuuid_new ();
-    zm_proto_set_device (self, metric_device);
+    zm_proto_set_device (self, "Life is short but Now lasts for ever");
     zm_proto_set_time (self, 123);
     zm_proto_set_ttl (self, 123);
     zhash_t *metric_ext = zhash_new ();
@@ -1038,16 +926,20 @@ zm_proto_test (bool verbose)
     zm_proto_set_type (self, "Life is short but Now lasts for ever");
     zm_proto_set_value (self, "Life is short but Now lasts for ever");
     zm_proto_set_unit (self, "Life is short but Now lasts for ever");
+    zmsg_destroy (&output);
+    output = zmsg_new ();
+    assert (output);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
 
+    zmsg_destroy (&input);
+    input = zmsg_dup (output);
+    assert (input);
     for (instance = 0; instance < 2; instance++) {
         zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self));
-        assert (zuuid_eq (metric_device, zuuid_data (zm_proto_device (self))));
-        if (instance == 1)
-            zuuid_destroy (&metric_device);
+        assert (zm_proto_routing_id (self) == NULL);
+        assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
         zhash_t *ext = zm_proto_get_ext (self);
@@ -1063,8 +955,7 @@ zm_proto_test (bool verbose)
     }
     zm_proto_set_id (self, ZM_PROTO_ALERT);
 
-    zuuid_t *alert_device = zuuid_new ();
-    zm_proto_set_device (self, alert_device);
+    zm_proto_set_device (self, "Life is short but Now lasts for ever");
     zm_proto_set_time (self, 123);
     zm_proto_set_ttl (self, 123);
     zhash_t *alert_ext = zhash_new ();
@@ -1074,16 +965,20 @@ zm_proto_test (bool verbose)
     zm_proto_set_state (self, 123);
     zm_proto_set_severity (self, 123);
     zm_proto_set_description (self, "Life is short but Now lasts for ever");
+    zmsg_destroy (&output);
+    output = zmsg_new ();
+    assert (output);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
 
+    zmsg_destroy (&input);
+    input = zmsg_dup (output);
+    assert (input);
     for (instance = 0; instance < 2; instance++) {
         zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self));
-        assert (zuuid_eq (alert_device, zuuid_data (zm_proto_device (self))));
-        if (instance == 1)
-            zuuid_destroy (&alert_device);
+        assert (zm_proto_routing_id (self) == NULL);
+        assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
         zhash_t *ext = zm_proto_get_ext (self);
@@ -1100,23 +995,26 @@ zm_proto_test (bool verbose)
     }
     zm_proto_set_id (self, ZM_PROTO_DEVICE);
 
-    zuuid_t *device_device = zuuid_new ();
-    zm_proto_set_device (self, device_device);
+    zm_proto_set_device (self, "Life is short but Now lasts for ever");
     zm_proto_set_time (self, 123);
     zm_proto_set_ttl (self, 123);
     zhash_t *device_ext = zhash_new ();
     zhash_insert (device_ext, "Name", "Brutus");
     zm_proto_set_ext (self, &device_ext);
+    zmsg_destroy (&output);
+    output = zmsg_new ();
+    assert (output);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
 
+    zmsg_destroy (&input);
+    input = zmsg_dup (output);
+    assert (input);
     for (instance = 0; instance < 2; instance++) {
         zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self));
-        assert (zuuid_eq (device_device, zuuid_data (zm_proto_device (self))));
-        if (instance == 1)
-            zuuid_destroy (&device_device);
+        assert (zm_proto_routing_id (self) == NULL);
+        assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
         zhash_t *ext = zm_proto_get_ext (self);
@@ -1129,8 +1027,8 @@ zm_proto_test (bool verbose)
     }
 
     zm_proto_destroy (&self);
-    zsock_destroy (&input);
-    zsock_destroy (&output);
+    zmsg_destroy (&input);
+    zmsg_destroy (&output);
     //  @end
 
     printf ("OK\n");

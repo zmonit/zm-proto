@@ -92,6 +92,14 @@ int
 int
     zm_proto_send (zm_proto_t *self, zsock_t *output);
 
+#if defined (MLM_VERSION)
+//  --------------------------------------------------------------------------
+//  Publish the zm_proto to malamute broker. Does not destroy it. Returns 0 if
+//  OK, else -1.
+
+int
+zm_proto_msend (zm_proto_t *self, mlm_client_t *client, const char* subject);
+#endif
 
 //  Print contents of message to stdout
 void

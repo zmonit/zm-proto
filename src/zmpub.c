@@ -34,6 +34,11 @@ s_atou64 (const char* s, uint64_t *res) {
     return false;
 }
 
+static bool
+strcaseq (const char *s1, const char *s2) {
+    return ! strcasecmp (s1, s2);
+}
+
 int main (int argc, char *argv [])
 {
     bool verbose = false;
@@ -47,6 +52,7 @@ int main (int argc, char *argv [])
             puts ("  --verbose / -v         verbose test output");
             puts ("  --help / -h            this information");
             puts ("");
+            puts ("                alert device ttl type rule state severity description");
             puts ("                metric device ttl type value unit");
             return 0;
         }
@@ -76,11 +82,20 @@ int main (int argc, char *argv [])
     }
 
     char *stream = argv [argn];
-    if (streq (stream, "metric")) {
+    if (strcaseq (stream, "metric")) {
         // FIXME: this check expects --ext arguments to be placed before, this can be fixed by
         //        reordering of argv like getopt does
         if (argc - argn != 5) {
             zsys_error ("metric expect 5 arguments exactly device ttl type value unit");
+            exit (EXIT_FAILURE);
+        }
+    }
+    else
+    if (strcaseq (stream, "alert")) {
+        // FIXME: this check expects --ext arguments to be placed before, this can be fixed by
+        //        reordering of argv like getopt does
+        if (argc - argn != 7) {
+            zsys_error ("alert expect 7 arguments exactly device ttl rule state severity description");
             exit (EXIT_FAILURE);
         }
     }
@@ -105,7 +120,7 @@ int main (int argc, char *argv [])
     zstr_free (&address);
 
     zm_proto_t *msg = zm_proto_new ();
-    if (streq (stream, "metric")) {
+    if (strcaseq (stream, "metric")) {
         char *device = argv [argn+1];
         uint64_t ttl;
         bool s = s_atou64 (argv [argn+2], &ttl);
@@ -122,7 +137,6 @@ int main (int argc, char *argv [])
 
         char *subject = zsys_sprintf ("%s@%s", type, device);
 
-        zuuid_destroy (&uuid);
         zm_proto_set_ttl (msg, ttl);
         zm_proto_set_type (msg, type);
         zm_proto_set_value (msg, value);
@@ -133,6 +147,45 @@ int main (int argc, char *argv [])
         mlm_client_send (client, subject, &zmsg);
         zstr_free (&subject);
 
+    }
+    else
+    if (strcaseq (stream, "alert")) {
+        char *device = argv [argn+1];
+        uint64_t ttl;
+        bool s = s_atou64 (argv [argn+2], &ttl);
+        if (!s) {
+            zsys_debug ("Failed to parse %s as a number", argv [argn+2]);
+            exit (EXIT_FAILURE);
+        }
+        char *rule = argv [argn+3];
+
+        bool active = false;
+        if (strcaseq (argv [argn+4], "active")) {
+            active = true;
+        }
+
+        bool critical = false;
+        if (strcaseq (argv [argn+5], "critical")) {
+            active = true;
+        }
+
+        char *description = argv [argn+6];
+
+        zm_proto_set_id (msg, ZM_PROTO_ALERT);
+        zm_proto_set_device (msg, device);
+
+        char *subject = zsys_sprintf ("%s@%s", rule, device);
+
+        zm_proto_set_ttl (msg, ttl);
+        zm_proto_set_rule (msg, rule);
+        zm_proto_set_active (msg, active ? 1 : 0);
+        zm_proto_set_critical (msg, critical ? 1 : 0);
+        zm_proto_set_description (msg, description);
+
+        zmsg_t *zmsg = zmsg_new ();
+        zm_proto_send (msg, zmsg);
+        mlm_client_send (client, subject, &zmsg);
+        zstr_free (&subject);
     }
     // to give background threads the time to send it
     zclock_sleep (2000);

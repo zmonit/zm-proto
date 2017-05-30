@@ -50,8 +50,8 @@ struct _zm_proto_t {
     char value [256];                   //  Metric value, e.g.: "25.323" or "900".
     char unit [256];                    //  Metric unit, e.g.: "C" or "F" for temperature, "W" or "kW" for realpower etc...
     char rule [256];                    //  Identifier of the rule which triggers this alert.
-    byte state;                         //  Alert is active (value 1) or resolved (value 0).
-    byte severity;                      //  Alert is critical (value 1) or not (value 0).
+    byte active;                        //  Alert is active (value 1) or resolved (value 0).
+    byte critical;                      //  Alert is critical (value 1) or not (value 0).
     char description [256];             //  Alert description.
 };
 
@@ -262,8 +262,8 @@ zm_proto_dup (zm_proto_t *other)
     zm_proto_set_value (copy, zm_proto_value (other));
     zm_proto_set_unit (copy, zm_proto_unit (other));
     zm_proto_set_rule (copy, zm_proto_rule (other));
-    zm_proto_set_state (copy, zm_proto_state (other));
-    zm_proto_set_severity (copy, zm_proto_severity (other));
+    zm_proto_set_active (copy, zm_proto_active (other));
+    zm_proto_set_critical (copy, zm_proto_critical (other));
     zm_proto_set_description (copy, zm_proto_description (other));
 
     return copy;
@@ -345,8 +345,8 @@ zm_proto_recv (zm_proto_t *self, zmsg_t *input)
                 }
             }
             GET_STRING (self->rule);
-            GET_NUMBER1 (self->state);
-            GET_NUMBER1 (self->severity);
+            GET_NUMBER1 (self->active);
+            GET_NUMBER1 (self->critical);
             GET_STRING (self->description);
             break;
 
@@ -431,8 +431,8 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
             }
             frame_size += self->ext_bytes;
             frame_size += 1 + strlen (self->rule);
-            frame_size += 1;            //  state
-            frame_size += 1;            //  severity
+            frame_size += 1;            //  active
+            frame_size += 1;            //  critical
             frame_size += 1 + strlen (self->description);
             break;
         case ZM_PROTO_DEVICE:
@@ -495,8 +495,8 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
             else
                 PUT_NUMBER4 (0);    //  Empty hash
             PUT_STRING (self->rule);
-            PUT_NUMBER1 (self->state);
-            PUT_NUMBER1 (self->severity);
+            PUT_NUMBER1 (self->active);
+            PUT_NUMBER1 (self->critical);
             PUT_STRING (self->description);
             break;
 
@@ -569,8 +569,8 @@ zm_proto_print (zm_proto_t *self)
             else
                 zsys_debug ("(NULL)");
             zsys_debug ("    rule='%s'", self->rule);
-            zsys_debug ("    state=%ld", (long) self->state);
-            zsys_debug ("    severity=%ld", (long) self->severity);
+            zsys_debug ("    active=%ld", (long) self->active);
+            zsys_debug ("    critical=%ld", (long) self->critical);
             zsys_debug ("    description='%s'", self->description);
             break;
 
@@ -831,38 +831,38 @@ zm_proto_set_rule (zm_proto_t *self, const char *value)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the state field
+//  Get/set the active field
 
 byte
-zm_proto_state (zm_proto_t *self)
+zm_proto_active (zm_proto_t *self)
 {
     assert (self);
-    return self->state;
+    return self->active;
 }
 
 void
-zm_proto_set_state (zm_proto_t *self, byte state)
+zm_proto_set_active (zm_proto_t *self, byte active)
 {
     assert (self);
-    self->state = state;
+    self->active = active;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the severity field
+//  Get/set the critical field
 
 byte
-zm_proto_severity (zm_proto_t *self)
+zm_proto_critical (zm_proto_t *self)
 {
     assert (self);
-    return self->severity;
+    return self->critical;
 }
 
 void
-zm_proto_set_severity (zm_proto_t *self, byte severity)
+zm_proto_set_critical (zm_proto_t *self, byte critical)
 {
     assert (self);
-    self->severity = severity;
+    self->critical = critical;
 }
 
 
@@ -962,8 +962,8 @@ zm_proto_test (bool verbose)
     zhash_insert (alert_ext, "Name", "Brutus");
     zm_proto_set_ext (self, &alert_ext);
     zm_proto_set_rule (self, "Life is short but Now lasts for ever");
-    zm_proto_set_state (self, 123);
-    zm_proto_set_severity (self, 123);
+    zm_proto_set_active (self, 123);
+    zm_proto_set_critical (self, 123);
     zm_proto_set_description (self, "Life is short but Now lasts for ever");
     zmsg_destroy (&output);
     output = zmsg_new ();
@@ -989,8 +989,8 @@ zm_proto_test (bool verbose)
         if (instance == 1)
             zhash_destroy (&alert_ext);
         assert (streq (zm_proto_rule (self), "Life is short but Now lasts for ever"));
-        assert (zm_proto_state (self) == 123);
-        assert (zm_proto_severity (self) == 123);
+        assert (zm_proto_active (self) == 123);
+        assert (zm_proto_critical (self) == 123);
         assert (streq (zm_proto_description (self), "Life is short but Now lasts for ever"));
     }
     zm_proto_set_id (self, ZM_PROTO_DEVICE);

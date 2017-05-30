@@ -77,58 +77,23 @@ int main (int argc, char *argv [])
         }
     }
 
+    //  Insert main code here
+    if (verbose)
+        zsys_info ("zmpub - Helper tool to publish zm-proto messages on a stream");
+
     if (!argv [argn]) {
         zsys_error ("No stream defined, use one of metric/alert/device");
         exit (EXIT_FAILURE);
     }
 
     char *stream = argv [argn];
-    if (strcaseq (stream, "metric")) {
-        // FIXME: this check expects --ext arguments to be placed before, this can be fixed by
-        //        reordering of argv like getopt does
-        if (argc - argn != 5) {
-            zsys_error ("metric expect 5 arguments: device ttl type value unit");
-            exit (EXIT_FAILURE);
-        }
-    }
-    else
-    if (strcaseq (stream, "alert")) {
-        // FIXME: this check expects --ext arguments to be placed before, this can be fixed by
-        //        reordering of argv like getopt does
-        if (argc - argn != 7) {
-            zsys_error ("alert expect 7 arguments: device ttl rule state severity description");
-            exit (EXIT_FAILURE);
-        }
-    }
-    if (strcaseq (stream, "alert")) {
-        // FIXME: this check expects --ext arguments to be placed before, this can be fixed by
-        //        reordering of argv like getopt does
-        if (argc - argn != 2) {
-            zsys_error ("device expect 2 arguments: device ttl");
-            exit (EXIT_FAILURE);
-        }
-    }
-    else {
-        zsys_error ("No code for stream %s", stream);
+    if (!strcaseq (stream, "alert") || !strcaseq (stream, "device") || !strcaseq (stream, "metric")) {
+        zsys_error ("Unknown stream name, use alert/device/metric");
         exit (EXIT_FAILURE);
     }
 
-    //  Insert main code here
-    if (verbose)
-        zsys_info ("zmpub - Helper tool to publish zm-proto messages on a stream");
-
-    // connect to malamute
-    mlm_client_t *client = mlm_client_new ();
-    assert (client);
-
-    zuuid_t *uuid = zuuid_new ();
-    char *address = zsys_sprintf ("zmpub-%s", zuuid_str_canonical (uuid));
-    zuuid_destroy (&uuid);
-    int r = mlm_client_connect (client, endpoint, 3000, address);
-    assert (r != -1);
-    zstr_free (&address);
-
     zm_proto_t *msg = zm_proto_new ();
+    char *subject = NULL;
     if (strcaseq (stream, "metric")) {
         char *device = argv [argn+1];
         uint64_t ttl;
@@ -144,17 +109,12 @@ int main (int argc, char *argv [])
         zm_proto_set_id (msg, ZM_PROTO_METRIC);
         zm_proto_set_device (msg, device);
 
-        char *subject = zsys_sprintf ("%s@%s", type, device);
+        subject = zsys_sprintf ("%s@%s", type, device);
 
         zm_proto_set_ttl (msg, ttl);
         zm_proto_set_type (msg, type);
         zm_proto_set_value (msg, value);
         zm_proto_set_unit (msg, unit);
-
-        zmsg_t *zmsg = zmsg_new ();
-        zm_proto_send (msg, zmsg);
-        mlm_client_send (client, subject, &zmsg);
-        zstr_free (&subject);
     }
     else
     if (strcaseq (stream, "alert")) {
@@ -182,18 +142,13 @@ int main (int argc, char *argv [])
         zm_proto_set_id (msg, ZM_PROTO_ALERT);
         zm_proto_set_device (msg, device);
 
-        char *subject = zsys_sprintf ("%s@%s", rule, device);
+        subject = zsys_sprintf ("%s@%s", rule, device);
 
         zm_proto_set_ttl (msg, ttl);
         zm_proto_set_rule (msg, rule);
         zm_proto_set_active (msg, active ? 1 : 0);
         zm_proto_set_critical (msg, critical ? 1 : 0);
         zm_proto_set_description (msg, description);
-
-        zmsg_t *zmsg = zmsg_new ();
-        zm_proto_send (msg, zmsg);
-        mlm_client_send (client, subject, &zmsg);
-        zstr_free (&subject);
     }
     else
     if (strcaseq (stream, "device")) {
@@ -205,17 +160,31 @@ int main (int argc, char *argv [])
             exit (EXIT_FAILURE);
         }
 
+        subject = strdup (device);
+
         zm_proto_set_id (msg, ZM_PROTO_DEVICE);
         zm_proto_set_device (msg, device);
         zm_proto_set_ttl (msg, ttl);
-
-        zmsg_t *zmsg = zmsg_new ();
-        zm_proto_send (msg, zmsg);
-        mlm_client_send (client, device, &zmsg);
     }
     // to give background threads the time to send it
-    zclock_sleep (2000);
+    // connect to malamute
+    mlm_client_t *client = mlm_client_new ();
+    assert (client);
 
+    zuuid_t *uuid = zuuid_new ();
+    char *address = zsys_sprintf ("zmpub-%s", zuuid_str_canonical (uuid));
+    zuuid_destroy (&uuid);
+    int r = mlm_client_connect (client, endpoint, 3000, address);
+    assert (r != -1);
+    zstr_free (&address);
+
+    zmsg_t *zmsg = zmsg_new ();
+    zm_proto_send (msg, zmsg);
+    mlm_client_send (client, subject, &zmsg);
+    zclock_sleep (500);
+
+    zm_proto_destroy (&msg);
+    zstr_free (&subject);
     zm_proto_destroy (&msg);
     mlm_client_destroy (&client);
     return 0;

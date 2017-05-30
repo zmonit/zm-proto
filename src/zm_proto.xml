@@ -53,11 +53,11 @@
         Identifier of the rule which triggers this alert.
     </field>
 
-    <field name = "state" type = "number" size = "1">
+    <field name = "active" type = "number" size = "1">
         Alert is active (value 1) or resolved (value 0).
     </field>
 
-    <field name = "severity" type = "number" size = "1">
+    <field name = "critical" type = "number" size = "1">
         Alert is critical (value 1) or not (value 0).
     </field>
 

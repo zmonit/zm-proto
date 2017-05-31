@@ -11,6 +11,12 @@
 
 <include filename = "../license.xml" />
 
+<!-- define main zmonit streams -->
+<define name = "METRIC_STREAM"          value = "&quot;METRICS&quot;" />
+<define name = "ALERT_STREAM"           value = "&quot;ALERTS&quot;" />
+<define name = "DEVICE_STREAM"          value = "&quot;DEVICES&quot;" />
+
+
 <!-- each message can be extended, put things to hash -->
 <header>
     <field name = "device" type = "string">

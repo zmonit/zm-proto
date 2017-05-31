@@ -52,6 +52,9 @@
         ext                 hash        Additional extended informations for the message
 */
 
+#define ZM_PROTO_METRIC_STREAM              "METRICS"
+#define ZM_PROTO_ALERT_STREAM               "ALERTS"
+#define ZM_PROTO_DEVICE_STREAM              "DEVICES"
 
 #define ZM_PROTO_METRIC                     1
 #define ZM_PROTO_ALERT                      2

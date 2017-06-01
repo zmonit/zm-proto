@@ -16,14 +16,13 @@ The following ABNF grammar defines the Basic messaging for zmon.it:
 
     ;  No description                                                        
 
-    ALERT           = signature %d2 device time ttl ext rule active critical description
+    ALERT           = signature %d2 device time ttl ext rule severity description
     device          = string                ; Device universal unique identifier
     time            = number-8              ; Time when message was generated
     ttl             = number-4              ; Time to live, after $current time > time - ttl, message is droped
     ext             = hash                  ; Additional extended informations for the message
     rule            = string                ; Identifier of the rule which triggers this alert.
-    active          = number-1              ; Alert is active (value 1) or resolved (value 0).
-    critical        = number-1              ; Alert is critical (value 1) or not (value 0).
+    severity        = number-1              ; Alert is present and critical (value > 0) or resolved (value 0).
     description     = string                ; Alert description.
 
     ;  No description                                                        

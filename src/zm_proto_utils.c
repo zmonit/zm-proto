@@ -138,6 +138,46 @@ zm_proto_decode (zmsg_t **message_p)
     }
 }
 
+zmsg_t *
+zm_proto_encode_metric (
+    const char *device,
+    int64_t time,
+    int32_t ttl,
+    zhash_t *ext,
+    const char *type,
+    const char *value,
+    const char *units
+)
+{
+    if (!device || !type || !value) return NULL;
+
+    zm_proto_t *self = zm_proto_new ();
+
+    zm_proto_set_id (self, ZM_PROTO_METRIC);
+    zm_proto_set_device (self, device);
+    zm_proto_set_time (self, time);
+    zm_proto_set_ttl (self, ttl);
+    if (ext) zm_proto_set_ext (self, &ext);
+    zm_proto_set_type (self, type);
+    zm_proto_set_value (self, value);
+    if (units) {
+        zm_proto_set_unit (self, units);
+    } else {
+        zm_proto_set_unit (self, "");
+    }
+
+    zmsg_t *output = zmsg_new ();
+    assert (output);
+    if (zm_proto_send (self, output) == 0) {
+        zm_proto_destroy (&self);
+        return output;
+    } else {
+        zm_proto_destroy (&self);
+        zmsg_destroy (&output);
+        return NULL;
+    }
+}
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 

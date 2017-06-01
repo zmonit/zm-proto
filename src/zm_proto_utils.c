@@ -226,7 +226,7 @@ zm_proto_encode_device (
 }
 
 //  --------------------------------------------------------------------------
-//  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+//  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
 
 zmsg_t *
 zm_proto_encode_alert (

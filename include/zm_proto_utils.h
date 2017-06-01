@@ -59,7 +59,6 @@ ZM_PROTO_EXPORT zmsg_t *
     );
 
 //  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
-
 ZM_PROTO_EXPORT zmsg_t *
     zm_proto_encode_device (
         const char *device,
@@ -67,6 +66,21 @@ ZM_PROTO_EXPORT zmsg_t *
         int32_t ttl,
         zhash_t *ext
     );
+
+
+//  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_alert (
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext,
+        const char *rule,
+        char severity,
+        const char *description
+    );
+
+
 //  Self test of this class
 ZM_PROTO_EXPORT void
     zm_proto_utils_test (bool verbose);

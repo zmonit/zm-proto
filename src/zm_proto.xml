@@ -59,12 +59,8 @@
         Identifier of the rule which triggers this alert.
     </field>
 
-    <field name = "active" type = "number" size = "1">
-        Alert is active (value 1) or resolved (value 0).
-    </field>
-
-    <field name = "critical" type = "number" size = "1">
-        Alert is critical (value 1) or not (value 0).
+    <field name = "severity" type = "number" size = "1">
+        Alert is present and critical (value > 0) or resolved (value 0).
     </field>
 
     <field name = "description" type = "string">

@@ -41,8 +41,7 @@
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
         rule                string      Identifier of the rule which triggers this alert.
-        active              number 1    Alert is active (value 1) or resolved (value 0).
-        critical            number 1    Alert is critical (value 1) or not (value 0).
+        severity            number 1    Alert is present and critical (value > 0) or resolved (value 0).
         description         string      Alert description.
 
     DEVICE - 
@@ -166,17 +165,11 @@ const char *
 void
     zm_proto_set_rule (zm_proto_t *self, const char *value);
 
-//  Get/set the active field
+//  Get/set the severity field
 byte
-    zm_proto_active (zm_proto_t *self);
+    zm_proto_severity (zm_proto_t *self);
 void
-    zm_proto_set_active (zm_proto_t *self, byte active);
-
-//  Get/set the critical field
-byte
-    zm_proto_critical (zm_proto_t *self);
-void
-    zm_proto_set_critical (zm_proto_t *self, byte critical);
+    zm_proto_set_severity (zm_proto_t *self, byte severity);
 
 //  Get/set the description field
 const char *

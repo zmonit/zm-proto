@@ -2,11 +2,11 @@
     zmpub - Helper tool to publish zm-proto messages on a stream
 
     Copyright (c) the Contributors as noted in the AUTHORS file.  This file is part
-    of zmon.it, the fast and scalable monitoring system.                           
-                                                                                   
+    of zmon.it, the fast and scalable monitoring system.
+
     This Source Code Form is subject to the terms of the Mozilla Public License, v.
-    2.0. If a copy of the MPL was not distributed with this file, You can obtain   
-    one at http://mozilla.org/MPL/2.0/.                                            
+    2.0. If a copy of the MPL was not distributed with this file, You can obtain
+    one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -188,7 +188,7 @@ int main (int argc, char *argv [])
         puts ("  --verbose / -v         verbose test output");
         puts ("  --help / -h            this information");
         puts ("");
-        puts ("                alert device ttl type rule state severity description");
+        puts ("                alert device ttl rule severity description");
         puts ("                device device ttl");
         puts ("                metric device ttl type value unit");
         return 0;
@@ -267,16 +267,10 @@ int main (int argc, char *argv [])
         }
         const char *rule = zargs_next (args);
 
-        bool active = false;
-        foo = zargs_next (args);
-        if (strcaseq (foo, "active")) {
-            active = true;
-        }
-
-        bool critical = false;
+        char severity = 0;
         foo = zargs_next (args);
         if (strcaseq (foo, "critical")) {
-            active = true;
+            severity = 1;
         }
 
         const char *description = zargs_next (args);
@@ -288,8 +282,7 @@ int main (int argc, char *argv [])
 
         zm_proto_set_ttl (msg, ttl);
         zm_proto_set_rule (msg, rule);
-        zm_proto_set_active (msg, active ? 1 : 0);
-        zm_proto_set_critical (msg, critical ? 1 : 0);
+        zm_proto_set_severity (msg, severity);
         zm_proto_set_description (msg, description);
     }
     else

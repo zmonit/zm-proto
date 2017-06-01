@@ -212,6 +212,41 @@ zm_proto_encode_device (
 
     zm_proto_t *self = s_zm_proto_encode_common (device, time, ttl, ext);
     zm_proto_set_id (self, ZM_PROTO_DEVICE);
+
+    zmsg_t *output = zmsg_new ();
+    assert (output);
+    if (zm_proto_send (self, output) == 0) {
+        zm_proto_destroy (&self);
+        return output;
+    } else {
+        zm_proto_destroy (&self);
+        zmsg_destroy (&output);
+        return NULL;
+    }
+}
+
+//  --------------------------------------------------------------------------
+//  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
+
+zmsg_t *
+zm_proto_encode_alert (
+    const char *device,
+    int64_t time,
+    int32_t ttl,
+    zhash_t *ext,
+    const char *rule,
+    char severity,
+    const char *description
+)
+{
+    if (!device || !rule) return NULL;
+
+    zm_proto_t *self = s_zm_proto_encode_common (device, time, ttl, ext);
+    zm_proto_set_id (self, ZM_PROTO_ALERT);
+    zm_proto_set_rule (self, rule);
+    zm_proto_set_severity (self, severity);
+    zm_proto_set_description (self, description);
+
     zmsg_t *output = zmsg_new ();
     assert (output);
     if (zm_proto_send (self, output) == 0) {

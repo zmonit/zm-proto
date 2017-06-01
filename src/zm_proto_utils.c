@@ -120,6 +120,25 @@ zm_proto_ext_set_double (zm_proto_t *self, const char *name, double value)
 }
 
 //  --------------------------------------------------------------------------
+//  Converts zmsg to zm_proto, this is for compatibility with zproto v1 codec
+zm_proto_t *
+zm_proto_decode (zmsg_t **message_p)
+{
+    if (! message_p || ! *message_p) return NULL;
+
+    zmsg_t *message = *message_p;
+    zm_proto_t *self = zm_proto_new ();
+
+    if (zm_proto_recv (self, message) == 0) {
+        zmsg_destroy (message_p);
+        return self;
+    } else {
+        zm_proto_destroy (&self);
+        return NULL;
+    }
+}
+
+//  --------------------------------------------------------------------------
 //  Self test of this class
 
 void

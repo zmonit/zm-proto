@@ -42,6 +42,31 @@ ZM_PROTO_EXPORT double
 ZM_PROTO_EXPORT void
     zm_proto_ext_set_double (zm_proto_t *self, const char *name, double value);
 
+//  Converts zmsg to zm_proto, this is for compatibility with zproto v1 codec
+ZM_PROTO_EXPORT zm_proto_t *
+    zm_proto_decode (zmsg_t **message_p);
+
+//  v1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_metric (
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext,
+        const char *type,
+        const char *value,
+        const char *units
+    );
+
+//  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_device (
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext
+    );
 //  Self test of this class
 ZM_PROTO_EXPORT void
     zm_proto_utils_test (bool verbose);

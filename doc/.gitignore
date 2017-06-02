@@ -18,7 +18,6 @@ zm_proto_utils.doc
 zmpub.txt
 zmpub.doc
 
-
 # Make sure to track the manually maintained project description
 !*.adoc
 

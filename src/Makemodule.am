@@ -21,6 +21,7 @@ include_HEADERS = \
 src_libzm_proto_la_SOURCES = \
     src/zm_proto.c \
     src/zm_proto_utils.c \
+    src/zargs.c \
     src/platform.h
 
 if ENABLE_DRAFTS

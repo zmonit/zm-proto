@@ -76,6 +76,7 @@ GENERATED_DOCS += zmpub.txt zmpub.doc
 zmpub.txt: $(top_srcdir)/src/zmpub.c
 	"$(srcdir)/mkman" "zmpub" "$(builddir)/zmpub.txt" "$(srcdir)/.."
 
+
 clean:
 	rm -f *.1 *.3 *.7 $(GENERATED_DOCS)
 

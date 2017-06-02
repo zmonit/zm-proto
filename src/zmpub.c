@@ -18,6 +18,7 @@
 */
 
 #include "zm_proto_classes.h"
+#include "zargs.h"
 
 static bool
 s_atou64 (const char* s, uint64_t *res) {
@@ -37,141 +38,6 @@ s_atou64 (const char* s, uint64_t *res) {
 static bool
 strcaseq (const char *s1, const char *s2) {
     return ! strcasecmp (s1, s2);
-}
-
-static char *ZARG_PARAM_EMPTY = "";
-
-struct _zargs_t {
-    char *progname;
-    zlist_t *arguments;
-    zhash_t *parameters;
-};
-
-typedef struct _zargs_t zargs_t;
-
-zargs_t *
-zargs_new (int argc, char **argv) {
-    zargs_t *self = (zargs_t*) zmalloc (sizeof (zargs_t));
-    assert (self);
-
-    self->progname = argv [0];
-    assert (self->progname);
-    self->arguments = zlist_new ();
-    assert (self->arguments);
-    self->parameters = zhash_new ();
-    assert (self->parameters);
-
-    int idx = 1;
-    while (argv [idx]) {
-        if (argv [idx][0] != '-')
-            zlist_append (self->arguments, argv [idx]);
-        else {
-            if (argv [idx+1] && argv [idx+1][0] != '-') {
-                zhash_insert (self->parameters, argv [idx], argv [idx+1]);
-                idx ++;
-            }
-            else {
-                zhash_insert (self->parameters, argv [idx], ZARG_PARAM_EMPTY);
-            }
-        }
-        idx ++;
-    }
-
-    return self;
-}
-
-void
-zargs_destroy (zargs_t **self_p) {
-    assert (self_p);
-    if (*self_p) {
-        zargs_t *self = *self_p;
-        zlist_destroy (&self->arguments);
-        zhash_destroy (&self->parameters);
-        *self_p = NULL;
-    }
-}
-
-const char *
-zargs_progname (zargs_t *self) {
-    assert (self);
-    return self->progname;
-}
-
-size_t
-zargs_arguments (zargs_t *self) {
-    assert (self);
-    return zlist_size (self->arguments);
-}
-
-const char *
-zargs_first (zargs_t *self) {
-    assert (self);
-    return (const char*) zlist_first (self->arguments);
-}
-
-const char *
-zargs_next (zargs_t *self) {
-    assert (self);
-    return (const char*) zlist_next (self->arguments);
-}
-
-const char *
-zargs_param_first (zargs_t *self) {
-    assert (self);
-    return (const char*) zhash_first (self->parameters);
-}
-
-const char *
-zargs_param_next (zargs_t *self) {
-    assert (self);
-    return (const char*) zhash_next (self->parameters);
-}
-
-const char *
-zargs_param_name (zargs_t *self) {
-    assert (self);
-    return (const char*) zhash_cursor (self->parameters);
-}
-
-const char *
-zargs_param_lookup (zargs_t *self, const char *key1, const char *key2) {
-    assert (self);
-    const char *ret = (const char*) zhash_lookup (self->parameters, key1);
-    if (!ret && key2)
-        ret = (const char*) zhash_lookup (self->parameters, key2);
-    return ret;
-}
-
-size_t
-zargs_size (zargs_t *self) {
-    assert (self);
-    return zlist_size (self->arguments);
-}
-
-bool
-zargs_has_help (zargs_t *self) {
-    return zargs_param_lookup (self, "--help", "-h");
-}
-
-void
-zargs_print (zargs_t *self) {
-    assert (self);
-    printf ("%s ", self->progname);
-    for (const char *pvalue = zargs_param_first (self);
-                    pvalue != NULL;
-                    pvalue = zargs_param_next (self)) {
-        const char *pname = zargs_param_name (self);
-        if (pvalue == ZARG_PARAM_EMPTY)
-            printf ("%s ", pname);
-        else
-            printf ("%s %s ", pname, pvalue);
-    }
-    for (const char *arg = zargs_first (self);
-                     arg != NULL;
-                     arg = zargs_next (self)) {
-        printf ("%s ", arg);
-    }
-    puts ("");
 }
 
 int main (int argc, char *argv [])
@@ -197,7 +63,7 @@ int main (int argc, char *argv [])
         verbose = true;
 
     const char *foo = zargs_param_lookup (args, "--endpoint", "-e");
-    if (foo && foo == ZARG_PARAM_EMPTY) {
+    if (zargs_param_empty (foo)) {
         zsys_error ("endpoint value mandatory");
         exit (EXIT_FAILURE);
     }
@@ -222,7 +88,7 @@ int main (int argc, char *argv [])
     char *subject = NULL;
     if (strcaseq (stream, "metric")) {
 
-        if (zargs_size (args) != 6) {
+        if (zargs_arguments (args) != 6) {
             zsys_error ("Not enough arguments for metric command");
             exit (EXIT_FAILURE);
         }
@@ -252,7 +118,7 @@ int main (int argc, char *argv [])
     else
     if (strcaseq (stream, "alert")) {
 
-        if (zargs_size (args) != 7) {
+        if (zargs_arguments (args) != 7) {
             zsys_error ("Not enough arguments for alert command");
             exit (EXIT_FAILURE);
         }
@@ -288,7 +154,7 @@ int main (int argc, char *argv [])
     else
     if (strcaseq (stream, "device")) {
 
-        if (zargs_size (args) != 3) {
+        if (zargs_arguments (args) != 3) {
             zsys_error ("Not enough arguments for device command");
             exit (EXIT_FAILURE);
         }

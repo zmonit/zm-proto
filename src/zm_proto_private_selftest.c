@@ -28,6 +28,8 @@
 void
 zm_proto_private_selftest (bool verbose)
 {
+// Tests for stable private classes:
+    zargs_test (verbose);
 }
 /*
 ################################################################################

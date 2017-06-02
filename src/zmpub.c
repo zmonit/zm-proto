@@ -18,7 +18,6 @@
 */
 
 #include "zm_proto_classes.h"
-#include "zargs.h"
 
 static bool
 s_atou64 (const char* s, uint64_t *res) {
@@ -46,9 +45,9 @@ int main (int argc, char *argv [])
     bool verbose = false;
     const char *endpoint = "ipc://@/malamute";
 
-    zargs_t *args = zargs_new (argc, argv);
+    zmargs_t *args = zmargs_new (argc, argv);
 
-    if (zargs_has_help (args)) {
+    if (zmargs_has_help (args)) {
         puts ("zmpub [options] stream [arguments ...]");
         puts ("  --endpoint / -e        malamute endpoint (defaults to ipc://@/malamute)");
         puts ("  --verbose / -v         verbose test output");
@@ -59,11 +58,11 @@ int main (int argc, char *argv [])
         puts ("                metric device ttl type value unit");
         return 0;
     }
-    if (zargs_param_lookup (args, "--help", "-h"))
+    if (zmargs_param_lookup (args, "--help", "-h"))
         verbose = true;
 
-    const char *foo = zargs_param_lookup (args, "--endpoint", "-e");
-    if (zargs_param_empty (foo)) {
+    const char *foo = zmargs_param_lookup (args, "--endpoint", "-e");
+    if (zmargs_param_empty (foo)) {
         zsys_error ("endpoint value mandatory");
         exit (EXIT_FAILURE);
     }
@@ -73,7 +72,7 @@ int main (int argc, char *argv [])
         zsys_info ("zmpub - Helper tool to publish zm-proto messages on a stream");
 
 
-    const char *stream = zargs_first (args);
+    const char *stream = zmargs_first (args);
     if (!stream) {
         zsys_error ("No stream defined, use one of metric/alert/device");
         exit (EXIT_FAILURE);
@@ -88,22 +87,22 @@ int main (int argc, char *argv [])
     char *subject = NULL;
     if (strcaseq (stream, "metric")) {
 
-        if (zargs_arguments (args) != 6) {
+        if (zmargs_arguments (args) != 6) {
             zsys_error ("Not enough arguments for metric command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zargs_next (args);
+        const char *device = zmargs_next (args);
         uint64_t ttl;
-        const char *foo = zargs_next (args);
+        const char *foo = zmargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
             exit (EXIT_FAILURE);
         }
-        const char *type = zargs_next (args);
-        const char *value = zargs_next (args);
-        const char *unit = zargs_next (args);
+        const char *type = zmargs_next (args);
+        const char *value = zmargs_next (args);
+        const char *unit = zmargs_next (args);
 
         zm_proto_set_id (msg, ZM_PROTO_METRIC);
         zm_proto_set_device (msg, device);
@@ -118,28 +117,28 @@ int main (int argc, char *argv [])
     else
     if (strcaseq (stream, "alert")) {
 
-        if (zargs_arguments (args) != 7) {
+        if (zmargs_arguments (args) != 7) {
             zsys_error ("Not enough arguments for alert command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zargs_next (args);
+        const char *device = zmargs_next (args);
         uint64_t ttl;
-        const char *foo = zargs_next (args);
+        const char *foo = zmargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
             exit (EXIT_FAILURE);
         }
-        const char *rule = zargs_next (args);
+        const char *rule = zmargs_next (args);
 
         char severity = 0;
-        foo = zargs_next (args);
+        foo = zmargs_next (args);
         if (strcaseq (foo, "critical")) {
             severity = 1;
         }
 
-        const char *description = zargs_next (args);
+        const char *description = zmargs_next (args);
 
         zm_proto_set_id (msg, ZM_PROTO_ALERT);
         zm_proto_set_device (msg, device);
@@ -154,14 +153,14 @@ int main (int argc, char *argv [])
     else
     if (strcaseq (stream, "device")) {
 
-        if (zargs_arguments (args) != 3) {
+        if (zmargs_arguments (args) != 3) {
             zsys_error ("Not enough arguments for device command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zargs_next (args);
+        const char *device = zmargs_next (args);
         uint64_t ttl;
-        const char *foo = zargs_next (args);
+        const char *foo = zmargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
@@ -196,7 +195,7 @@ int main (int argc, char *argv [])
     zm_proto_destroy (&msg);
     mlm_client_destroy (&client);
 
-    zargs_print (args);
-    zargs_destroy (&args);
+    zmargs_print (args);
+    zmargs_destroy (&args);
     return 0;
 }

@@ -30,6 +30,7 @@ all_tests [] = {
 // Tests for stable public classes:
     { "zm_proto", zm_proto_test },
     { "zm_proto_utils", zm_proto_utils_test },
+    { "zmargs", zmargs_test },
 #ifdef ZM_PROTO_BUILD_DRAFT_API
     { "private_classes", zm_proto_private_selftest },
 #endif // ZM_PROTO_BUILD_DRAFT_API
@@ -99,6 +100,7 @@ main (int argc, char **argv)
             puts ("Available tests:");
             puts ("    zm_proto\t\t- stable");
             puts ("    zm_proto_utils\t\t- stable");
+            puts ("    zmargs\t\t- stable");
             puts ("    private_classes\t- draft");
             return 0;
         }

@@ -26,13 +26,8 @@
 //  Extra headers
 
 //  Opaque class structures to allow forward references
-#ifndef ZARGS_T_DEFINED
-typedef struct _zargs_t zargs_t;
-#define ZARGS_T_DEFINED
-#endif
 
 //  Internal API
-#include "zargs.h"
 
 //  *** To avoid double-definitions, only define if building without draft ***
 #ifndef ZM_PROTO_BUILD_DRAFT_API

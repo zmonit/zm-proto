@@ -40,7 +40,6 @@ EXTRA_DIST += \
 endif
 
 EXTRA_DIST += \
-    src/zargs.h \
     src/zm_proto_classes.h
 
 # NOTE: this "include" syntax is not a "make" but an "autotools" keyword,

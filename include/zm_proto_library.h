@@ -64,11 +64,14 @@ typedef struct _zm_proto_t zm_proto_t;
 #define ZM_PROTO_T_DEFINED
 typedef struct _zm_proto_utils_t zm_proto_utils_t;
 #define ZM_PROTO_UTILS_T_DEFINED
+typedef struct _zmargs_t zmargs_t;
+#define ZMARGS_T_DEFINED
 
 
 //  Public classes, each with its own header file
 #include "zm_proto.h"
 #include "zm_proto_utils.h"
+#include "zmargs.h"
 
 #ifdef ZM_PROTO_BUILD_DRAFT_API
 //  Self test for private classes

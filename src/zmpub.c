@@ -58,7 +58,7 @@ int main (int argc, char *argv [])
         puts ("                metric device ttl type value unit");
         return 0;
     }
-    if (zargs_has_help (args))
+    if (zargs_param_lookupx (args, "-v", "--verbose", NULL))
         verbose = true;
 
     const char *foo = zargs_param_lookupx (args, "--endpoint", "-e", NULL);
@@ -70,7 +70,6 @@ int main (int argc, char *argv [])
     //  Insert main code here
     if (verbose)
         zsys_info ("zmpub - Helper tool to publish zm-proto messages on a stream");
-
 
     const char *stream = zargs_first (args);
     if (!stream) {

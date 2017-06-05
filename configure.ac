@@ -574,6 +574,16 @@ AC_ARG_ENABLE([zmpub],
 AM_CONDITIONAL([ENABLE_ZMPUB], [test x$enable_zmpub != xno])
 AM_COND_IF([ENABLE_ZMPUB], [AC_MSG_NOTICE([ENABLE_ZMPUB defined])])
 
+# Check for zmsub intent
+AC_ARG_ENABLE([zmsub],
+    AS_HELP_STRING([--enable-zmsub],
+        [Compile and install 'zmsub' [default=yes]]),
+    [enable_zmsub=$enableval],
+    [enable_zmsub=yes])
+
+AM_CONDITIONAL([ENABLE_ZMSUB], [test x$enable_zmsub != xno])
+AM_COND_IF([ENABLE_ZMSUB], [AC_MSG_NOTICE([ENABLE_ZMSUB defined])])
+
 # Check for zm_proto_selftest intent
 AC_ARG_ENABLE([zm_proto_selftest],
     AS_HELP_STRING([--enable-zm_proto_selftest],

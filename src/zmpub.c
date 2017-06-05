@@ -45,9 +45,9 @@ int main (int argc, char *argv [])
     bool verbose = false;
     const char *endpoint = "ipc://@/malamute";
 
-    zmargs_t *args = zmargs_new (argc, argv);
+    zargs_t *args = zargs_new (argc, argv);
 
-    if (zmargs_has_help (args)) {
+    if (zargs_has_help (args)) {
         puts ("zmpub [options] stream [arguments ...]");
         puts ("  --endpoint / -e        malamute endpoint (defaults to ipc://@/malamute)");
         puts ("  --verbose / -v         verbose test output");
@@ -58,11 +58,11 @@ int main (int argc, char *argv [])
         puts ("                metric device ttl type value unit");
         return 0;
     }
-    if (zmargs_param_lookup (args, "--help", "-h"))
+    if (zargs_param_lookupx (args, "-v", "--verbose", NULL))
         verbose = true;
 
-    const char *foo = zmargs_param_lookup (args, "--endpoint", "-e");
-    if (zmargs_param_empty (foo)) {
+    const char *foo = zargs_param_lookupx (args, "--endpoint", "-e", NULL);
+    if (zargs_param_empty (foo)) {
         zsys_error ("endpoint value mandatory");
         exit (EXIT_FAILURE);
     }
@@ -71,8 +71,7 @@ int main (int argc, char *argv [])
     if (verbose)
         zsys_info ("zmpub - Helper tool to publish zm-proto messages on a stream");
 
-
-    const char *stream = zmargs_first (args);
+    const char *stream = zargs_first (args);
     if (!stream) {
         zsys_error ("No stream defined, use one of metric/alert/device");
         exit (EXIT_FAILURE);
@@ -85,24 +84,25 @@ int main (int argc, char *argv [])
 
     zm_proto_t *msg = zm_proto_new ();
     char *subject = NULL;
+    char *mlmstream = NULL;
     if (strcaseq (stream, "metric")) {
 
-        if (zmargs_arguments (args) != 6) {
+        if (zargs_arguments (args) != 6) {
             zsys_error ("Not enough arguments for metric command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zmargs_next (args);
+        const char *device = zargs_next (args);
         uint64_t ttl;
-        const char *foo = zmargs_next (args);
+        const char *foo = zargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
             exit (EXIT_FAILURE);
         }
-        const char *type = zmargs_next (args);
-        const char *value = zmargs_next (args);
-        const char *unit = zmargs_next (args);
+        const char *type = zargs_next (args);
+        const char *value = zargs_next (args);
+        const char *unit = zargs_next (args);
 
         zm_proto_set_id (msg, ZM_PROTO_METRIC);
         zm_proto_set_device (msg, device);
@@ -113,32 +113,33 @@ int main (int argc, char *argv [])
         zm_proto_set_type (msg, type);
         zm_proto_set_value (msg, value);
         zm_proto_set_unit (msg, unit);
+	mlmstream = ZM_PROTO_METRIC_STREAM;
     }
     else
     if (strcaseq (stream, "alert")) {
 
-        if (zmargs_arguments (args) != 7) {
+        if (zargs_arguments (args) != 7) {
             zsys_error ("Not enough arguments for alert command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zmargs_next (args);
+        const char *device = zargs_next (args);
         uint64_t ttl;
-        const char *foo = zmargs_next (args);
+        const char *foo = zargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
             exit (EXIT_FAILURE);
         }
-        const char *rule = zmargs_next (args);
+        const char *rule = zargs_next (args);
 
         char severity = 0;
-        foo = zmargs_next (args);
+        foo = zargs_next (args);
         if (strcaseq (foo, "critical")) {
             severity = 1;
         }
 
-        const char *description = zmargs_next (args);
+        const char *description = zargs_next (args);
 
         zm_proto_set_id (msg, ZM_PROTO_ALERT);
         zm_proto_set_device (msg, device);
@@ -149,18 +150,19 @@ int main (int argc, char *argv [])
         zm_proto_set_rule (msg, rule);
         zm_proto_set_severity (msg, severity);
         zm_proto_set_description (msg, description);
+	mlmstream = ZM_PROTO_ALERT_STREAM;
     }
     else
     if (strcaseq (stream, "device")) {
 
-        if (zmargs_arguments (args) != 3) {
+        if (zargs_arguments (args) != 3) {
             zsys_error ("Not enough arguments for device command");
             exit (EXIT_FAILURE);
         }
 
-        const char *device = zmargs_next (args);
+        const char *device = zargs_next (args);
         uint64_t ttl;
-        const char *foo = zmargs_next (args);
+        const char *foo = zargs_next (args);
         bool s = s_atou64 (foo, &ttl);
         if (!s) {
             zsys_debug ("Failed to parse %s as a number", foo);
@@ -172,6 +174,7 @@ int main (int argc, char *argv [])
         zm_proto_set_id (msg, ZM_PROTO_DEVICE);
         zm_proto_set_device (msg, device);
         zm_proto_set_ttl (msg, ttl);
+	mlmstream = ZM_PROTO_DEVICE_STREAM;
     }
     // to give background threads the time to send it
     // connect to malamute
@@ -184,6 +187,8 @@ int main (int argc, char *argv [])
     int r = mlm_client_connect (client, endpoint, 3000, address);
     assert (r != -1);
     zstr_free (&address);
+    r = mlm_client_set_producer (client, mlmstream);
+    assert (r != -1);
 
     zmsg_t *zmsg = zmsg_new ();
     zm_proto_send (msg, zmsg);
@@ -195,7 +200,7 @@ int main (int argc, char *argv [])
     zm_proto_destroy (&msg);
     mlm_client_destroy (&client);
 
-    zmargs_print (args);
-    zmargs_destroy (&args);
+    zargs_print (args);
+    zargs_destroy (&args);
     return 0;
 }

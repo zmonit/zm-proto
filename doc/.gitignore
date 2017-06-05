@@ -15,10 +15,10 @@ zm_proto.txt
 zm_proto.doc
 zm_proto_utils.txt
 zm_proto_utils.doc
-zmargs.txt
-zmargs.doc
 zmpub.txt
 zmpub.doc
+zmsub.txt
+zmsub.doc
 
 # Make sure to track the manually maintained project description
 !*.adoc

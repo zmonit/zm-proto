@@ -84,6 +84,7 @@ int main (int argc, char *argv [])
 
     zm_proto_t *msg = zm_proto_new ();
     char *subject = NULL;
+    char *stream = NULL;
     if (strcaseq (stream, "metric")) {
 
         if (zargs_arguments (args) != 6) {
@@ -112,6 +113,7 @@ int main (int argc, char *argv [])
         zm_proto_set_type (msg, type);
         zm_proto_set_value (msg, value);
         zm_proto_set_unit (msg, unit);
+	stream = ZM_PROTO_METRIC_STREAM;
     }
     else
     if (strcaseq (stream, "alert")) {
@@ -148,6 +150,7 @@ int main (int argc, char *argv [])
         zm_proto_set_rule (msg, rule);
         zm_proto_set_severity (msg, severity);
         zm_proto_set_description (msg, description);
+	stream = ZM_PROTO_ALERT_STREAM;
     }
     else
     if (strcaseq (stream, "device")) {
@@ -171,6 +174,7 @@ int main (int argc, char *argv [])
         zm_proto_set_id (msg, ZM_PROTO_DEVICE);
         zm_proto_set_device (msg, device);
         zm_proto_set_ttl (msg, ttl);
+	stream = ZM_PROTO_DEVICE_STREAM;
     }
     // to give background threads the time to send it
     // connect to malamute
@@ -183,6 +187,8 @@ int main (int argc, char *argv [])
     int r = mlm_client_connect (client, endpoint, 3000, address);
     assert (r != -1);
     zstr_free (&address);
+    r = mlm_client_set_producer (client, stream);
+    assert (r != -1);
 
     zmsg_t *zmsg = zmsg_new ();
     zm_proto_send (msg, zmsg);

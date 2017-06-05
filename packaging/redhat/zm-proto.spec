@@ -98,5 +98,7 @@ find %{buildroot} -name '*.la' | xargs rm -f
 %defattr(-,root,root)
 %{_bindir}/zmpub
 %{_mandir}/man1/zmpub*
+%{_bindir}/zmsub
+%{_mandir}/man1/zmsub*
 
 %changelog

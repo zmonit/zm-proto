@@ -55,6 +55,13 @@ src_zmpub_LDADD = ${program_libs}
 src_zmpub_SOURCES = src/zmpub.c
 endif #ENABLE_ZMPUB
 
+if ENABLE_ZMSUB
+bin_PROGRAMS += src/zmsub
+src_zmsub_CPPFLAGS = ${AM_CPPFLAGS}
+src_zmsub_LDADD = ${program_libs}
+src_zmsub_SOURCES = src/zmsub.c
+endif #ENABLE_ZMSUB
+
 if ENABLE_ZM_PROTO_SELFTEST
 check_PROGRAMS += src/zm_proto_selftest
 noinst_PROGRAMS += src/zm_proto_selftest
@@ -66,6 +73,7 @@ endif #ENABLE_ZM_PROTO_SELFTEST
 # define custom target for all products of /src
 src: \
 		src/zmpub \
+		src/zmsub \
 		src/zm_proto_selftest \
 		src/libzm_proto.la
 

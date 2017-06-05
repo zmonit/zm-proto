@@ -21,5 +21,6 @@
     <model name = "zm_proto" codec="zproto_codec_c" />
     <class name = "zm_proto_utils" state = "stable" >Various utils to work with zm_proto messages</class>
     <main name = "zmpub" >Helper tool to publish zm-proto messages on a stream</main>
+    <main name = "zmsub" >Helper tool to subscribe to zm-proto messages from a stream</main>
 
 </project>

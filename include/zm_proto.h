@@ -76,6 +76,10 @@ typedef struct _zm_proto_t zm_proto_t;
 zm_proto_t *
     zm_proto_new (void);
 
+//  Create a new zm_proto from zpl/zconfig_t *
+zm_proto_t *
+    zm_proto_new_zpl (zconfig_t *config);
+
 //  Destroy a zm_proto instance
 void
     zm_proto_destroy (zm_proto_t **self_p);
@@ -98,6 +102,10 @@ int
 //  Print contents of message to stdout
 void
     zm_proto_print (zm_proto_t *self);
+
+//  Export class as zconfig_t*. Caller is responsibe for destroying the instance
+zconfig_t *
+    zm_proto_zpl (zm_proto_t *self, zconfig_t* parent);
 
 //  Get/set the message routing id
 zframe_t *

@@ -203,6 +203,47 @@ struct _zm_proto_t {
     self->needle += string_size; \
 }
 
+//  --------------------------------------------------------------------------
+//  bytes cstring conversion macros
+
+// create new array of unsigned char from properly encoded string
+// len of resulting array is strlen (str) / 2
+// caller is responsibe for freeing up the memory
+#define BYTES_FROM_STR(dst, _str) { \
+    char *str = (char*) (_str); \
+    if (!str || (strlen (str) % 2) != 0) \
+        return NULL; \
+\
+    size_t strlen_2 = strlen (str) / 2; \
+    byte *mem = (byte*) zmalloc (strlen_2); \
+\
+    for (size_t i = 0; i != strlen_2; i++) \
+    { \
+        char buff[3] = {0x0, 0x0, 0x0}; \
+        strncpy (buff, str, 2); \
+        unsigned int uint; \
+        sscanf (buff, "%x", &uint); \
+        assert (uint <= 0xff); \
+        mem [i] = (byte) (0xff & uint); \
+        str += 2; \
+    } \
+    dst = mem; \
+}
+
+// convert len bytes to hex string
+// caller is responsibe for freeing up the memory
+#define STR_FROM_BYTES(dst, _mem, _len) { \
+    byte *mem = (byte*) (_mem); \
+    size_t len = (size_t) (_len); \
+    char* ret = (char*) zmalloc (2*len + 1); \
+    char* aux = ret; \
+    for (size_t i = 0; i != len; i++) \
+    { \
+        sprintf (aux, "%02x", mem [i]); \
+        aux+=2; \
+    } \
+    dst = ret; \
+}
 
 //  --------------------------------------------------------------------------
 //  Create a new zm_proto
@@ -211,6 +252,287 @@ zm_proto_t *
 zm_proto_new (void)
 {
     zm_proto_t *self = (zm_proto_t *) zmalloc (sizeof (zm_proto_t));
+    return self;
+}
+
+//  --------------------------------------------------------------------------
+//  Create a new zm_proto from zpl/zconfig_t *
+
+zm_proto_t *
+    zm_proto_new_zpl (zconfig_t *config)
+{
+    assert (config);
+    zm_proto_t *self = NULL;
+    char *message = zconfig_get (config, "message", NULL);
+    if (!message) {
+        zsys_error ("Can't find 'message' section");
+        return NULL;
+    }
+
+    if (streq ("ZM_PROTO_METRIC", message)) {
+        self = zm_proto_new ();
+        zm_proto_set_id (self, ZM_PROTO_METRIC);
+    }
+    else
+    if (streq ("ZM_PROTO_ALERT", message)) {
+        self = zm_proto_new ();
+        zm_proto_set_id (self, ZM_PROTO_ALERT);
+    }
+    else
+    if (streq ("ZM_PROTO_DEVICE", message)) {
+        self = zm_proto_new ();
+        zm_proto_set_id (self, ZM_PROTO_DEVICE);
+    }
+    else
+       {
+        zsys_error ("message=%s is not known", message);
+        return NULL;
+       }
+
+    char *s = zconfig_get (config, "routing_id", NULL);
+    if (s) {
+        byte *bvalue;
+        BYTES_FROM_STR (bvalue, s);
+        if (!bvalue) {
+            zm_proto_destroy (&self);
+            return NULL;
+        }
+        zframe_t *frame = zframe_new (bvalue, strlen (s) / 2);
+        free (bvalue);
+        self->routing_id = frame;
+    }
+
+    zconfig_t *content = zconfig_locate (config, "content");
+    if (!content) {
+        zsys_error ("Can't find 'content' section");
+        return NULL;
+    }
+    switch (self->id) {
+        case ZM_PROTO_METRIC:
+            {
+            char *s = zconfig_get (content, "device", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->device, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "time", NULL);
+            if (!s) {
+                zsys_error ("content/time not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/time: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->time = uvalue;
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "ttl", NULL);
+            if (!s) {
+                zsys_error ("content/ttl not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/ttl: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->ttl = uvalue;
+            }
+            {
+            zconfig_t *zhash = zconfig_locate (content, "ext");
+            if (zhash) {
+                zhash_t *hash = zhash_new ();
+                zhash_autofree (hash);
+                for (zconfig_t *child = zconfig_child (zhash);
+                                child != NULL;
+                                child = zconfig_next (child))
+                {
+                    zhash_update (hash, zconfig_name (child), zconfig_value (child));
+                }
+                self->ext = hash;
+            }
+            }
+            {
+            char *s = zconfig_get (content, "type", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->type, s, 256);
+            }
+            {
+            char *s = zconfig_get (content, "value", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->value, s, 256);
+            }
+            {
+            char *s = zconfig_get (content, "unit", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->unit, s, 256);
+            }
+            break;
+        case ZM_PROTO_ALERT:
+            {
+            char *s = zconfig_get (content, "device", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->device, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "time", NULL);
+            if (!s) {
+                zsys_error ("content/time not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/time: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->time = uvalue;
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "ttl", NULL);
+            if (!s) {
+                zsys_error ("content/ttl not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/ttl: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->ttl = uvalue;
+            }
+            {
+            zconfig_t *zhash = zconfig_locate (content, "ext");
+            if (zhash) {
+                zhash_t *hash = zhash_new ();
+                zhash_autofree (hash);
+                for (zconfig_t *child = zconfig_child (zhash);
+                                child != NULL;
+                                child = zconfig_next (child))
+                {
+                    zhash_update (hash, zconfig_name (child), zconfig_value (child));
+                }
+                self->ext = hash;
+            }
+            }
+            {
+            char *s = zconfig_get (content, "rule", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->rule, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "severity", NULL);
+            if (!s) {
+                zsys_error ("content/severity not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/severity: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->severity = uvalue;
+            }
+            {
+            char *s = zconfig_get (content, "description", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->description, s, 256);
+            }
+            break;
+        case ZM_PROTO_DEVICE:
+            {
+            char *s = zconfig_get (content, "device", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->device, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "time", NULL);
+            if (!s) {
+                zsys_error ("content/time not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/time: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->time = uvalue;
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "ttl", NULL);
+            if (!s) {
+                zsys_error ("content/ttl not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/ttl: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->ttl = uvalue;
+            }
+            {
+            zconfig_t *zhash = zconfig_locate (content, "ext");
+            if (zhash) {
+                zhash_t *hash = zhash_new ();
+                zhash_autofree (hash);
+                for (zconfig_t *child = zconfig_child (zhash);
+                                child != NULL;
+                                child = zconfig_next (child))
+                {
+                    zhash_update (hash, zconfig_name (child), zconfig_value (child));
+                }
+                self->ext = hash;
+            }
+            }
+            break;
+    }
     return self;
 }
 
@@ -588,6 +910,109 @@ zm_proto_print (zm_proto_t *self)
     }
 }
 
+//  --------------------------------------------------------------------------
+//  Export class as zconfig_t*. Caller is responsibe for destroying the instance
+
+zconfig_t *
+zm_proto_zpl (zm_proto_t *self, zconfig_t *parent)
+{
+    assert (self);
+
+    zconfig_t *root = zconfig_new ("zm_proto", parent);
+
+    switch (self->id) {
+        case ZM_PROTO_METRIC:
+        {
+            zconfig_put (root, "message", "ZM_PROTO_METRIC");
+
+            if (self->routing_id) {
+                char *hex = NULL;
+                STR_FROM_BYTES (hex, zframe_data (self->routing_id), zframe_size (self->routing_id));
+                zconfig_putf (root, "routing_id", "%s", hex);
+                zstr_free (&hex);
+            }
+
+            zconfig_t *config = zconfig_new ("content", root);
+            if (self->device)
+                zconfig_putf (config, "device", "%s", self->device);
+            zconfig_putf (config, "time", "%ld", (long) self->time);
+            zconfig_putf (config, "ttl", "%ld", (long) self->ttl);
+            if (self->ext) {
+                zconfig_t *hash = zconfig_new ("ext", config);
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zconfig_putf (hash, zhash_cursor (self->ext), "%s", item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            if (self->type)
+                zconfig_putf (config, "type", "%s", self->type);
+            if (self->value)
+                zconfig_putf (config, "value", "%s", self->value);
+            if (self->unit)
+                zconfig_putf (config, "unit", "%s", self->unit);
+            break;
+            }
+        case ZM_PROTO_ALERT:
+        {
+            zconfig_put (root, "message", "ZM_PROTO_ALERT");
+
+            if (self->routing_id) {
+                char *hex = NULL;
+                STR_FROM_BYTES (hex, zframe_data (self->routing_id), zframe_size (self->routing_id));
+                zconfig_putf (root, "routing_id", "%s", hex);
+                zstr_free (&hex);
+            }
+
+            zconfig_t *config = zconfig_new ("content", root);
+            if (self->device)
+                zconfig_putf (config, "device", "%s", self->device);
+            zconfig_putf (config, "time", "%ld", (long) self->time);
+            zconfig_putf (config, "ttl", "%ld", (long) self->ttl);
+            if (self->ext) {
+                zconfig_t *hash = zconfig_new ("ext", config);
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zconfig_putf (hash, zhash_cursor (self->ext), "%s", item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            if (self->rule)
+                zconfig_putf (config, "rule", "%s", self->rule);
+            zconfig_putf (config, "severity", "%ld", (long) self->severity);
+            if (self->description)
+                zconfig_putf (config, "description", "%s", self->description);
+            break;
+            }
+        case ZM_PROTO_DEVICE:
+        {
+            zconfig_put (root, "message", "ZM_PROTO_DEVICE");
+
+            if (self->routing_id) {
+                char *hex = NULL;
+                STR_FROM_BYTES (hex, zframe_data (self->routing_id), zframe_size (self->routing_id));
+                zconfig_putf (root, "routing_id", "%s", hex);
+                zstr_free (&hex);
+            }
+
+            zconfig_t *config = zconfig_new ("content", root);
+            if (self->device)
+                zconfig_putf (config, "device", "%s", self->device);
+            zconfig_putf (config, "time", "%ld", (long) self->time);
+            zconfig_putf (config, "ttl", "%ld", (long) self->ttl);
+            if (self->ext) {
+                zconfig_t *hash = zconfig_new ("ext", config);
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zconfig_putf (hash, zhash_cursor (self->ext), "%s", item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            break;
+            }
+    }
+    return root;
+}
 
 //  --------------------------------------------------------------------------
 //  Get/set the message routing_id
@@ -878,6 +1303,7 @@ zm_proto_test (bool verbose)
 
     //  @selftest
     //  Simple create/destroy test
+    zconfig_t *config;
     zm_proto_t *self = zm_proto_new ();
     assert (self);
     zm_proto_destroy (&self);
@@ -905,6 +1331,10 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&output);
     output = zmsg_new ();
     assert (output);
+    // convert to zpl
+    config = zm_proto_zpl (self, NULL);
+    if (verbose)
+        zconfig_print (config);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
@@ -912,9 +1342,16 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&input);
     input = zmsg_dup (output);
     assert (input);
-    for (instance = 0; instance < 2; instance++) {
-        zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self) == NULL);
+    for (instance = 0; instance < 3; instance++) {
+        zm_proto_t *self_temp = self;
+        if (instance < 2)
+            zm_proto_recv (self, input);
+        else {
+            self = zm_proto_new_zpl (config);
+            zconfig_destroy (&config);
+        }
+        if (instance < 2)
+            assert (zm_proto_routing_id (self) == NULL);
         assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
@@ -928,6 +1365,10 @@ zm_proto_test (bool verbose)
         assert (streq (zm_proto_type (self), "Life is short but Now lasts for ever"));
         assert (streq (zm_proto_value (self), "Life is short but Now lasts for ever"));
         assert (streq (zm_proto_unit (self), "Life is short but Now lasts for ever"));
+        if (instance == 2) {
+            zm_proto_destroy (&self);
+            self = self_temp;
+        }
     }
     zm_proto_set_id (self, ZM_PROTO_ALERT);
 
@@ -943,6 +1384,10 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&output);
     output = zmsg_new ();
     assert (output);
+    // convert to zpl
+    config = zm_proto_zpl (self, NULL);
+    if (verbose)
+        zconfig_print (config);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
@@ -950,9 +1395,16 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&input);
     input = zmsg_dup (output);
     assert (input);
-    for (instance = 0; instance < 2; instance++) {
-        zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self) == NULL);
+    for (instance = 0; instance < 3; instance++) {
+        zm_proto_t *self_temp = self;
+        if (instance < 2)
+            zm_proto_recv (self, input);
+        else {
+            self = zm_proto_new_zpl (config);
+            zconfig_destroy (&config);
+        }
+        if (instance < 2)
+            assert (zm_proto_routing_id (self) == NULL);
         assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
@@ -966,6 +1418,10 @@ zm_proto_test (bool verbose)
         assert (streq (zm_proto_rule (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_severity (self) == 123);
         assert (streq (zm_proto_description (self), "Life is short but Now lasts for ever"));
+        if (instance == 2) {
+            zm_proto_destroy (&self);
+            self = self_temp;
+        }
     }
     zm_proto_set_id (self, ZM_PROTO_DEVICE);
 
@@ -978,6 +1434,10 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&output);
     output = zmsg_new ();
     assert (output);
+    // convert to zpl
+    config = zm_proto_zpl (self, NULL);
+    if (verbose)
+        zconfig_print (config);
     //  Send twice
     zm_proto_send (self, output);
     zm_proto_send (self, output);
@@ -985,9 +1445,16 @@ zm_proto_test (bool verbose)
     zmsg_destroy (&input);
     input = zmsg_dup (output);
     assert (input);
-    for (instance = 0; instance < 2; instance++) {
-        zm_proto_recv (self, input);
-        assert (zm_proto_routing_id (self) == NULL);
+    for (instance = 0; instance < 3; instance++) {
+        zm_proto_t *self_temp = self;
+        if (instance < 2)
+            zm_proto_recv (self, input);
+        else {
+            self = zm_proto_new_zpl (config);
+            zconfig_destroy (&config);
+        }
+        if (instance < 2)
+            assert (zm_proto_routing_id (self) == NULL);
         assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
         assert (zm_proto_time (self) == 123);
         assert (zm_proto_ttl (self) == 123);
@@ -998,6 +1465,10 @@ zm_proto_test (bool verbose)
         zhash_destroy (&ext);
         if (instance == 1)
             zhash_destroy (&device_ext);
+        if (instance == 2) {
+            zm_proto_destroy (&self);
+            self = self_temp;
+        }
     }
 
     zm_proto_destroy (&self);

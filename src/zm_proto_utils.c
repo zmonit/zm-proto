@@ -158,9 +158,9 @@ s_zm_proto_encode_common (
         zm_proto_set_ext (self, &d);
     }
     else {
-        zhash_t *ext = zm_proto_ext (self);
-        zhash_destroy (&ext);
-        zm_proto_set_ext (self, NULL);
+        zhash_t *new_ext = zhash_new ();
+        zhash_autofree (new_ext);
+        zm_proto_set_ext (self, &new_ext);
     }
         
     return self;

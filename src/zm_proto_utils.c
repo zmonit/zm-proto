@@ -140,15 +140,16 @@ zm_proto_decode (zmsg_t **message_p)
 
 static zm_proto_t *
 s_zm_proto_encode_common (
+    zm_proto_t *self,
+    int id,
     const char *device,
     int64_t time,
     int32_t ttl,
     zhash_t *ext
 )
 {
-    zm_proto_t *self = zm_proto_new ();
     assert (self);
-
+    zm_proto_set_id (self, id);
     zm_proto_set_device (self, device);
     zm_proto_set_time (self, time);
     zm_proto_set_ttl (self, ttl);
@@ -156,14 +157,40 @@ s_zm_proto_encode_common (
         zhash_t *d = zhash_dup (ext);
         zm_proto_set_ext (self, &d);
     }
+    else {
+        zhash_t *ext = zm_proto_ext (self);
+        zhash_destroy (&ext);
+        zm_proto_set_ext (self, NULL);
+    }
+        
     return self;
 }
 
-//  --------------------------------------------------------------------------
-//  v1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+static zmsg_t *
+s_encode (zm_proto_t **self_p)
+{
+    assert (self_p);
 
-zmsg_t *
+    if (*self_p) {
+        zm_proto_t *self = *self_p;
+        zmsg_t *output = zmsg_new ();
+        assert (output);
+
+        if (zm_proto_send (self, output) == 0) {
+            zm_proto_destroy (&self);
+            return output;
+        } else {
+            zm_proto_destroy (&self);
+            zmsg_destroy (&output);
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
+void
 zm_proto_encode_metric (
+    zm_proto_t *self,
     const char *device,
     int64_t time,
     int32_t ttl,
@@ -173,10 +200,8 @@ zm_proto_encode_metric (
     const char *units
 )
 {
-    if (!device || !type || !value) return NULL;
-
-    zm_proto_t *self = s_zm_proto_encode_common (device, time, ttl, ext);
-    zm_proto_set_id (self, ZM_PROTO_METRIC);
+    assert (self);
+    s_zm_proto_encode_common (self, ZM_PROTO_METRIC, device, time, ttl, ext);
     zm_proto_set_type (self, type);
     zm_proto_set_value (self, value);
     if (units) {
@@ -184,52 +209,82 @@ zm_proto_encode_metric (
     } else {
         zm_proto_set_unit (self, "");
     }
-
-    zmsg_t *output = zmsg_new ();
-    assert (output);
-    if (zm_proto_send (self, output) == 0) {
-        zm_proto_destroy (&self);
-        return output;
-    } else {
-        zm_proto_destroy (&self);
-        zmsg_destroy (&output);
-        return NULL;
-    }
 }
 
-//  --------------------------------------------------------------------------
-//  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
-
-zmsg_t *
-zm_proto_encode_device (
+void
+zm_proto_encode_device(
+    zm_proto_t *self,
     const char *device,
     int64_t time,
     int32_t ttl,
     zhash_t *ext
 )
 {
-    if (!device) return NULL;
+    assert (self);
+    s_zm_proto_encode_common (self, ZM_PROTO_DEVICE, device, time, ttl, ext);
+}
 
-    zm_proto_t *self = s_zm_proto_encode_common (device, time, ttl, ext);
-    zm_proto_set_id (self, ZM_PROTO_DEVICE);
+void
+zm_proto_encode_alert (
+    zm_proto_t *self,
+    const char *device,
+    int64_t time,
+    int32_t ttl,
+    zhash_t *ext,
+    const char *rule,
+    char severity,
+    const char *description
+)
+{
+    assert (self);
+    s_zm_proto_encode_common (self, ZM_PROTO_ALERT, device, time, ttl, ext);
+    zm_proto_set_rule (self, rule);
+    zm_proto_set_severity (self, severity);
+    zm_proto_set_description (self, description);
+}
 
-    zmsg_t *output = zmsg_new ();
-    assert (output);
-    if (zm_proto_send (self, output) == 0) {
-        zm_proto_destroy (&self);
-        return output;
-    } else {
-        zm_proto_destroy (&self);
-        zmsg_destroy (&output);
-        return NULL;
-    }
+//  --------------------------------------------------------------------------
+//  v1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+
+zmsg_t *
+zm_proto_encode_metric_v1 (
+    const char *device,
+    int64_t time,
+    int32_t ttl,
+    zhash_t *ext,
+    const char *type,
+    const char *value,
+    const char *units
+)
+{
+    zm_proto_t *self = zm_proto_new ();
+    assert (self);
+    zm_proto_encode_metric (self, device, time, ttl, ext, type, value, units);
+    return s_encode (&self);
+}
+
+//  --------------------------------------------------------------------------
+//  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+
+zmsg_t *
+zm_proto_encode_device_v1(
+    const char *device,
+    int64_t time,
+    int32_t ttl,
+    zhash_t *ext
+)
+{
+    zm_proto_t *self = zm_proto_new ();
+    assert (self);
+    zm_proto_encode_device (self, device, time, ttl, ext);
+    return s_encode (&self);
 }
 
 //  --------------------------------------------------------------------------
 //  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
 
 zmsg_t *
-zm_proto_encode_alert (
+zm_proto_encode_alert_v1 (
     const char *device,
     int64_t time,
     int32_t ttl,
@@ -241,22 +296,11 @@ zm_proto_encode_alert (
 {
     if (!device || !rule) return NULL;
 
-    zm_proto_t *self = s_zm_proto_encode_common (device, time, ttl, ext);
-    zm_proto_set_id (self, ZM_PROTO_ALERT);
-    zm_proto_set_rule (self, rule);
-    zm_proto_set_severity (self, severity);
-    zm_proto_set_description (self, description);
+    zm_proto_t *self = zm_proto_new ();
+    assert (self);
+    zm_proto_encode_alert (self, device, time, ttl, ext, rule, severity, description);
+    return s_encode (&self);
 
-    zmsg_t *output = zmsg_new ();
-    assert (output);
-    if (zm_proto_send (self, output) == 0) {
-        zm_proto_destroy (&self);
-        return output;
-    } else {
-        zm_proto_destroy (&self);
-        zmsg_destroy (&output);
-        return NULL;
-    }
 }
 
 //  --------------------------------------------------------------------------
@@ -298,7 +342,7 @@ zm_proto_utils_test (bool verbose)
         zhash_autofree (ext);
         zhash_insert (ext, "item", (void *)"value");
 
-        zmsg_t *msg = zm_proto_encode_metric ("mydevice", 10, 20, ext, "temperature", "20.3", "C");
+        zmsg_t *msg = zm_proto_encode_metric_v1 ("mydevice", 10, 20, ext, "temperature", "20.3", "C");
         assert (msg);
 
         zm_proto_t *self = zm_proto_decode (&msg);

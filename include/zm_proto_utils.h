@@ -48,7 +48,7 @@ ZM_PROTO_EXPORT zm_proto_t *
 
 //  v1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
 ZM_PROTO_EXPORT zmsg_t *
-    zm_proto_encode_metric (
+    zm_proto_encode_metric_v1 (
         const char *device,
         int64_t time,
         int32_t ttl,
@@ -60,7 +60,7 @@ ZM_PROTO_EXPORT zmsg_t *
 
 //  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
 ZM_PROTO_EXPORT zmsg_t *
-    zm_proto_encode_device (
+    zm_proto_encode_device_v1 (
         const char *device,
         int64_t time,
         int32_t ttl,
@@ -70,7 +70,7 @@ ZM_PROTO_EXPORT zmsg_t *
 
 //  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
 ZM_PROTO_EXPORT zmsg_t *
-    zm_proto_encode_alert (
+    zm_proto_encode_alert_v1 (
         const char *device,
         int64_t time,
         int32_t ttl,
@@ -80,6 +80,41 @@ ZM_PROTO_EXPORT zmsg_t *
         const char *description
     );
 
+//  encode metric
+ZM_PROTO_EXPORT void
+    zm_proto_encode_metric (
+        zm_proto_t *self,
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext,
+        const char *type,
+        const char *value,
+        const char *units
+    );
+
+//  encode device
+ZM_PROTO_EXPORT void
+    zm_proto_encode_device (
+        zm_proto_t *self,
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext
+    );
+
+//  encode device
+ZM_PROTO_EXPORT void
+    zm_proto_encode_alert (
+        zm_proto_t *self,
+        const char *device,
+        int64_t time,
+        int32_t ttl,
+        zhash_t *ext,
+        const char *rule,
+        char severity,
+        const char *description
+    );
 
 //  Self test of this class
 ZM_PROTO_EXPORT void

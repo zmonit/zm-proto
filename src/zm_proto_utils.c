@@ -156,6 +156,12 @@ s_zm_proto_encode_common (
         zhash_t *d = zhash_dup (ext);
         zm_proto_set_ext (self, &d);
     }
+    else {
+        zhash_t *ext = zm_proto_ext (self);
+        zhash_destroy (&ext);
+        zm_proto_set_ext (self, NULL);
+    }
+        
     return self;
 }
 
@@ -163,7 +169,7 @@ s_zm_proto_encode_common (
 //  v1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
 
 zmsg_t *
-zm_proto_encode_metric (
+zm_proto_encode_metric_v1 (
     const char *device,
     int64_t time,
     int32_t ttl,
@@ -201,7 +207,7 @@ zm_proto_encode_metric (
 //  v1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
 
 zmsg_t *
-zm_proto_encode_device (
+zm_proto_encode_device_v1(
     const char *device,
     int64_t time,
     int32_t ttl,
@@ -229,7 +235,7 @@ zm_proto_encode_device (
 //  v1 codec compatibility function, creates zm_proto_t with alert and encode it to zmsg_t
 
 zmsg_t *
-zm_proto_encode_alert (
+zm_proto_encode_alert_v1 (
     const char *device,
     int64_t time,
     int32_t ttl,
@@ -298,7 +304,7 @@ zm_proto_utils_test (bool verbose)
         zhash_autofree (ext);
         zhash_insert (ext, "item", (void *)"value");
 
-        zmsg_t *msg = zm_proto_encode_metric ("mydevice", 10, 20, ext, "temperature", "20.3", "C");
+        zmsg_t *msg = zm_proto_encode_metric_v1 ("mydevice", 10, 20, ext, "temperature", "20.3", "C");
         assert (msg);
 
         zm_proto_t *self = zm_proto_decode (&msg);

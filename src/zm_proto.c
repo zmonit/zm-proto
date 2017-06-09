@@ -52,6 +52,7 @@ struct _zm_proto_t {
     char rule [256];                    //  Identifier of the rule which triggers this alert.
     byte severity;                      //  Alert is present and critical (value > 0) or resolved (value 0).
     char description [256];             //  Alert description.
+    uint16_t code;                      //  (HTTP?) Error code
 };
 
 //  --------------------------------------------------------------------------
@@ -282,6 +283,16 @@ zm_proto_t *
     if (streq ("ZM_PROTO_DEVICE", message)) {
         self = zm_proto_new ();
         zm_proto_set_id (self, ZM_PROTO_DEVICE);
+    }
+    else
+    if (streq ("ZM_PROTO_OK", message)) {
+        self = zm_proto_new ();
+        zm_proto_set_id (self, ZM_PROTO_OK);
+    }
+    else
+    if (streq ("ZM_PROTO_ERROR", message)) {
+        self = zm_proto_new ();
+        zm_proto_set_id (self, ZM_PROTO_ERROR);
     }
     else
        {
@@ -532,6 +543,142 @@ zm_proto_t *
             }
             }
             break;
+        case ZM_PROTO_OK:
+            {
+            char *s = zconfig_get (content, "device", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->device, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "time", NULL);
+            if (!s) {
+                zsys_error ("content/time not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/time: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->time = uvalue;
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "ttl", NULL);
+            if (!s) {
+                zsys_error ("content/ttl not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/ttl: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->ttl = uvalue;
+            }
+            {
+            zconfig_t *zhash = zconfig_locate (content, "ext");
+            if (zhash) {
+                zhash_t *hash = zhash_new ();
+                zhash_autofree (hash);
+                for (zconfig_t *child = zconfig_child (zhash);
+                                child != NULL;
+                                child = zconfig_next (child))
+                {
+                    zhash_update (hash, zconfig_name (child), zconfig_value (child));
+                }
+                self->ext = hash;
+            }
+            }
+            break;
+        case ZM_PROTO_ERROR:
+            {
+            char *s = zconfig_get (content, "device", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->device, s, 256);
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "time", NULL);
+            if (!s) {
+                zsys_error ("content/time not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/time: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->time = uvalue;
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "ttl", NULL);
+            if (!s) {
+                zsys_error ("content/ttl not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/ttl: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->ttl = uvalue;
+            }
+            {
+            zconfig_t *zhash = zconfig_locate (content, "ext");
+            if (zhash) {
+                zhash_t *hash = zhash_new ();
+                zhash_autofree (hash);
+                for (zconfig_t *child = zconfig_child (zhash);
+                                child != NULL;
+                                child = zconfig_next (child))
+                {
+                    zhash_update (hash, zconfig_name (child), zconfig_value (child));
+                }
+                self->ext = hash;
+            }
+            }
+            {
+            char *es = NULL;
+            char *s = zconfig_get (content, "code", NULL);
+            if (!s) {
+                zsys_error ("content/code not found");
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            uint64_t uvalue = (uint64_t) strtoll (s, &es, 10);
+            if (es != s+strlen (s)) {
+                zsys_error ("content/code: %s is not a number", s);
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            self->code = uvalue;
+            }
+            {
+            char *s = zconfig_get (content, "description", NULL);
+            if (!s) {
+                zm_proto_destroy (&self);
+                return NULL;
+            }
+            strncpy (self->description, s, 256);
+            }
+            break;
     }
     return self;
 }
@@ -585,6 +732,7 @@ zm_proto_dup (zm_proto_t *other)
     zm_proto_set_rule (copy, zm_proto_rule (other));
     zm_proto_set_severity (copy, zm_proto_severity (other));
     zm_proto_set_description (copy, zm_proto_description (other));
+    zm_proto_set_code (copy, zm_proto_code (other));
 
     return copy;
 }
@@ -690,6 +838,50 @@ zm_proto_recv (zm_proto_t *self, zmsg_t *input)
             }
             break;
 
+        case ZM_PROTO_OK:
+            GET_STRING (self->device);
+            GET_NUMBER8 (self->time);
+            GET_NUMBER4 (self->ttl);
+            {
+                size_t hash_size;
+                GET_NUMBER4 (hash_size);
+                zhash_destroy (&self->ext);
+                self->ext = zhash_new ();
+                zhash_autofree (self->ext);
+                while (hash_size--) {
+                    char key [256];
+                    char *value = NULL;
+                    GET_STRING (key);
+                    GET_LONGSTR (value);
+                    zhash_insert (self->ext, key, value);
+                    free (value);
+                }
+            }
+            break;
+
+        case ZM_PROTO_ERROR:
+            GET_STRING (self->device);
+            GET_NUMBER8 (self->time);
+            GET_NUMBER4 (self->ttl);
+            {
+                size_t hash_size;
+                GET_NUMBER4 (hash_size);
+                zhash_destroy (&self->ext);
+                self->ext = zhash_new ();
+                zhash_autofree (self->ext);
+                while (hash_size--) {
+                    char key [256];
+                    char *value = NULL;
+                    GET_STRING (key);
+                    GET_LONGSTR (value);
+                    zhash_insert (self->ext, key, value);
+                    free (value);
+                }
+            }
+            GET_NUMBER2 (self->code);
+            GET_STRING (self->description);
+            break;
+
         default:
             zsys_warning ("zm_proto: bad message ID");
             rc = -2;            //  Malformed
@@ -769,6 +961,40 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
             }
             frame_size += self->ext_bytes;
             break;
+        case ZM_PROTO_OK:
+            frame_size += 1 + strlen (self->device);
+            frame_size += 8;            //  time
+            frame_size += 4;            //  ttl
+            frame_size += 4;            //  Size is 4 octets
+            if (self->ext) {
+                self->ext_bytes = 0;
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    self->ext_bytes += 1 + strlen (zhash_cursor (self->ext));
+                    self->ext_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            frame_size += self->ext_bytes;
+            break;
+        case ZM_PROTO_ERROR:
+            frame_size += 1 + strlen (self->device);
+            frame_size += 8;            //  time
+            frame_size += 4;            //  ttl
+            frame_size += 4;            //  Size is 4 octets
+            if (self->ext) {
+                self->ext_bytes = 0;
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    self->ext_bytes += 1 + strlen (zhash_cursor (self->ext));
+                    self->ext_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            frame_size += self->ext_bytes;
+            frame_size += 2;            //  code
+            frame_size += 1 + strlen (self->description);
+            break;
     }
     //  Now serialize message into the frame
     zframe_t *frame = zframe_new (NULL, frame_size);
@@ -832,6 +1058,42 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
             }
             else
                 PUT_NUMBER4 (0);    //  Empty hash
+            break;
+
+        case ZM_PROTO_OK:
+            PUT_STRING (self->device);
+            PUT_NUMBER8 (self->time);
+            PUT_NUMBER4 (self->ttl);
+            if (self->ext) {
+                PUT_NUMBER4 (zhash_size (self->ext));
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    PUT_STRING (zhash_cursor (self->ext));
+                    PUT_LONGSTR (item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty hash
+            break;
+
+        case ZM_PROTO_ERROR:
+            PUT_STRING (self->device);
+            PUT_NUMBER8 (self->time);
+            PUT_NUMBER4 (self->ttl);
+            if (self->ext) {
+                PUT_NUMBER4 (zhash_size (self->ext));
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    PUT_STRING (zhash_cursor (self->ext));
+                    PUT_LONGSTR (item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty hash
+            PUT_NUMBER2 (self->code);
+            PUT_STRING (self->description);
             break;
 
     }
@@ -905,6 +1167,42 @@ zm_proto_print (zm_proto_t *self)
             }
             else
                 zsys_debug ("(NULL)");
+            break;
+
+        case ZM_PROTO_OK:
+            zsys_debug ("ZM_PROTO_OK:");
+            zsys_debug ("    device='%s'", self->device);
+            zsys_debug ("    time=%ld", (long) self->time);
+            zsys_debug ("    ttl=%ld", (long) self->ttl);
+            zsys_debug ("    ext=");
+            if (self->ext) {
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zsys_debug ("        %s=%s", zhash_cursor (self->ext), item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            else
+                zsys_debug ("(NULL)");
+            break;
+
+        case ZM_PROTO_ERROR:
+            zsys_debug ("ZM_PROTO_ERROR:");
+            zsys_debug ("    device='%s'", self->device);
+            zsys_debug ("    time=%ld", (long) self->time);
+            zsys_debug ("    ttl=%ld", (long) self->ttl);
+            zsys_debug ("    ext=");
+            if (self->ext) {
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zsys_debug ("        %s=%s", zhash_cursor (self->ext), item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    code=%ld", (long) self->code);
+            zsys_debug ("    description='%s'", self->description);
             break;
 
     }
@@ -1010,6 +1308,61 @@ zm_proto_zpl (zm_proto_t *self, zconfig_t *parent)
             }
             break;
             }
+        case ZM_PROTO_OK:
+        {
+            zconfig_put (root, "message", "ZM_PROTO_OK");
+
+            if (self->routing_id) {
+                char *hex = NULL;
+                STR_FROM_BYTES (hex, zframe_data (self->routing_id), zframe_size (self->routing_id));
+                zconfig_putf (root, "routing_id", "%s", hex);
+                zstr_free (&hex);
+            }
+
+            zconfig_t *config = zconfig_new ("content", root);
+            if (self->device)
+                zconfig_putf (config, "device", "%s", self->device);
+            zconfig_putf (config, "time", "%ld", (long) self->time);
+            zconfig_putf (config, "ttl", "%ld", (long) self->ttl);
+            if (self->ext) {
+                zconfig_t *hash = zconfig_new ("ext", config);
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zconfig_putf (hash, zhash_cursor (self->ext), "%s", item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            break;
+            }
+        case ZM_PROTO_ERROR:
+        {
+            zconfig_put (root, "message", "ZM_PROTO_ERROR");
+
+            if (self->routing_id) {
+                char *hex = NULL;
+                STR_FROM_BYTES (hex, zframe_data (self->routing_id), zframe_size (self->routing_id));
+                zconfig_putf (root, "routing_id", "%s", hex);
+                zstr_free (&hex);
+            }
+
+            zconfig_t *config = zconfig_new ("content", root);
+            if (self->device)
+                zconfig_putf (config, "device", "%s", self->device);
+            zconfig_putf (config, "time", "%ld", (long) self->time);
+            zconfig_putf (config, "ttl", "%ld", (long) self->ttl);
+            if (self->ext) {
+                zconfig_t *hash = zconfig_new ("ext", config);
+                char *item = (char *) zhash_first (self->ext);
+                while (item) {
+                    zconfig_putf (hash, zhash_cursor (self->ext), "%s", item);
+                    item = (char *) zhash_next (self->ext);
+                }
+            }
+            zconfig_putf (config, "code", "%ld", (long) self->code);
+            if (self->description)
+                zconfig_putf (config, "description", "%s", self->description);
+            break;
+            }
     }
     return root;
 }
@@ -1065,6 +1418,12 @@ zm_proto_command (zm_proto_t *self)
             break;
         case ZM_PROTO_DEVICE:
             return ("DEVICE");
+            break;
+        case ZM_PROTO_OK:
+            return ("OK");
+            break;
+        case ZM_PROTO_ERROR:
+            return ("ERROR");
             break;
     }
     return "?";
@@ -1289,6 +1648,24 @@ zm_proto_set_description (zm_proto_t *self, const char *value)
 }
 
 
+//  --------------------------------------------------------------------------
+//  Get/set the code field
+
+uint16_t
+zm_proto_code (zm_proto_t *self)
+{
+    assert (self);
+    return self->code;
+}
+
+void
+zm_proto_set_code (zm_proto_t *self, uint16_t code)
+{
+    assert (self);
+    self->code = code;
+}
+
+
 
 //  --------------------------------------------------------------------------
 //  Selftest
@@ -1465,6 +1842,104 @@ zm_proto_test (bool verbose)
         zhash_destroy (&ext);
         if (instance == 1)
             zhash_destroy (&device_ext);
+        if (instance == 2) {
+            zm_proto_destroy (&self);
+            self = self_temp;
+        }
+    }
+    zm_proto_set_id (self, ZM_PROTO_OK);
+
+    zm_proto_set_device (self, "Life is short but Now lasts for ever");
+    zm_proto_set_time (self, 123);
+    zm_proto_set_ttl (self, 123);
+    zhash_t *ok_ext = zhash_new ();
+    zhash_insert (ok_ext, "Name", "Brutus");
+    zm_proto_set_ext (self, &ok_ext);
+    zmsg_destroy (&output);
+    output = zmsg_new ();
+    assert (output);
+    // convert to zpl
+    config = zm_proto_zpl (self, NULL);
+    if (verbose)
+        zconfig_print (config);
+    //  Send twice
+    zm_proto_send (self, output);
+    zm_proto_send (self, output);
+
+    zmsg_destroy (&input);
+    input = zmsg_dup (output);
+    assert (input);
+    for (instance = 0; instance < 3; instance++) {
+        zm_proto_t *self_temp = self;
+        if (instance < 2)
+            zm_proto_recv (self, input);
+        else {
+            self = zm_proto_new_zpl (config);
+            zconfig_destroy (&config);
+        }
+        if (instance < 2)
+            assert (zm_proto_routing_id (self) == NULL);
+        assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
+        assert (zm_proto_time (self) == 123);
+        assert (zm_proto_ttl (self) == 123);
+        zhash_t *ext = zm_proto_get_ext (self);
+        assert (zhash_size (ext) == 1);
+        assert (streq ((char *) zhash_first (ext), "Brutus"));
+        assert (streq ((char *) zhash_cursor (ext), "Name"));
+        zhash_destroy (&ext);
+        if (instance == 1)
+            zhash_destroy (&ok_ext);
+        if (instance == 2) {
+            zm_proto_destroy (&self);
+            self = self_temp;
+        }
+    }
+    zm_proto_set_id (self, ZM_PROTO_ERROR);
+
+    zm_proto_set_device (self, "Life is short but Now lasts for ever");
+    zm_proto_set_time (self, 123);
+    zm_proto_set_ttl (self, 123);
+    zhash_t *error_ext = zhash_new ();
+    zhash_insert (error_ext, "Name", "Brutus");
+    zm_proto_set_ext (self, &error_ext);
+    zm_proto_set_code (self, 123);
+    zm_proto_set_description (self, "Life is short but Now lasts for ever");
+    zmsg_destroy (&output);
+    output = zmsg_new ();
+    assert (output);
+    // convert to zpl
+    config = zm_proto_zpl (self, NULL);
+    if (verbose)
+        zconfig_print (config);
+    //  Send twice
+    zm_proto_send (self, output);
+    zm_proto_send (self, output);
+
+    zmsg_destroy (&input);
+    input = zmsg_dup (output);
+    assert (input);
+    for (instance = 0; instance < 3; instance++) {
+        zm_proto_t *self_temp = self;
+        if (instance < 2)
+            zm_proto_recv (self, input);
+        else {
+            self = zm_proto_new_zpl (config);
+            zconfig_destroy (&config);
+        }
+        if (instance < 2)
+            assert (zm_proto_routing_id (self) == NULL);
+        assert (streq (zm_proto_device (self), "Life is short but Now lasts for ever"));
+        assert (zm_proto_time (self) == 123);
+        assert (zm_proto_ttl (self) == 123);
+        zhash_t *ext = zm_proto_get_ext (self);
+        assert (zhash_size (ext) == 1);
+        assert (streq ((char *) zhash_first (ext), "Brutus"));
+        assert (streq ((char *) zhash_cursor (ext), "Name"));
+        zhash_destroy (&ext);
+        if (instance == 1)
+            zhash_destroy (&error_ext);
+        assert (zm_proto_code (self) == 123);
+        assert (streq (zm_proto_description (self), "Life is short but Now lasts for ever"));
         if (instance == 2) {
             zm_proto_destroy (&self);
             self = self_temp;

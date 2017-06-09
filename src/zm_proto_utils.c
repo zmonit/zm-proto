@@ -158,9 +158,9 @@ s_zm_proto_encode_common (
         zm_proto_set_ext (self, &d);
     }
     else {
-        zhash_t *ext = zm_proto_ext (self);
-        zhash_destroy (&ext);
-        zm_proto_set_ext (self, NULL);
+        zhash_t *new_ext = zhash_new ();
+        zhash_autofree (new_ext);
+        zm_proto_set_ext (self, &new_ext);
     }
         
     return self;
@@ -301,6 +301,24 @@ zm_proto_encode_alert_v1 (
     zm_proto_encode_alert (self, device, time, ttl, ext, rule, severity, description);
     return s_encode (&self);
 
+}
+
+void
+zm_proto_encode_ok (zm_proto_t *self)
+{
+    assert (self);
+
+    s_zm_proto_encode_common (self, ZM_PROTO_OK, NULL, 0, 0, NULL);
+}
+
+void
+zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description)
+{
+    assert (self);
+
+    s_zm_proto_encode_common (self, ZM_PROTO_ERROR, NULL, 0, 0, NULL);
+    zm_proto_set_code (self, code);
+    zm_proto_set_description (self, description);
 }
 
 //  --------------------------------------------------------------------------

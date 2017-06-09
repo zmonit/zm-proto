@@ -73,4 +73,19 @@
     id = "3">
 </message>
 
+<!-- fore REQ/REP pattern -->
+<message name = "OK" id = "4" />
+
+<message
+    name = "ERROR"
+    id = "5"
+    >
+    <field name = "code" type = "number" size = "4">
+        (HTTP?) Error code
+    </field>
+    <field name = "description" type = "string">
+        Error description.
+    </field>
+</message>
+
 </class>

@@ -49,6 +49,20 @@
         time                number 8    Time when message was generated
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
+
+    OK - 
+        device              string      Device universal unique identifier
+        time                number 8    Time when message was generated
+        ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
+        ext                 hash        Additional extended informations for the message
+
+    ERROR - 
+        device              string      Device universal unique identifier
+        time                number 8    Time when message was generated
+        ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
+        ext                 hash        Additional extended informations for the message
+        code                number 2    (HTTP?) Error code
+        description         string      Error description.
 */
 
 #define ZM_PROTO_METRIC_STREAM              "METRICS"
@@ -58,6 +72,8 @@
 #define ZM_PROTO_METRIC                     1
 #define ZM_PROTO_ALERT                      2
 #define ZM_PROTO_DEVICE                     3
+#define ZM_PROTO_OK                         4
+#define ZM_PROTO_ERROR                      5
 
 #include <czmq.h>
 
@@ -184,6 +200,12 @@ const char *
     zm_proto_description (zm_proto_t *self);
 void
     zm_proto_set_description (zm_proto_t *self, const char *value);
+
+//  Get/set the code field
+uint16_t
+    zm_proto_code (zm_proto_t *self);
+void
+    zm_proto_set_code (zm_proto_t *self, uint16_t code);
 
 //  Self test of this class
 void

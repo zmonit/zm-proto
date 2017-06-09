@@ -303,6 +303,24 @@ zm_proto_encode_alert_v1 (
 
 }
 
+void
+zm_proto_encode_ok (zm_proto_t *self)
+{
+    assert (self);
+
+    s_zm_proto_encode_common (self, ZM_PROTO_OK, NULL, 0, 0, NULL);
+}
+
+void
+zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description)
+{
+    assert (self);
+
+    s_zm_proto_encode_common (self, ZM_PROTO_ERROR, NULL, 0, 0, NULL);
+    zm_proto_set_code (self, code);
+    zm_proto_set_description (self, description);
+}
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 

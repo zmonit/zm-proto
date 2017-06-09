@@ -116,6 +116,14 @@ ZM_PROTO_EXPORT void
         const char *description
     );
 
+//  Encode OK message
+ZM_PROTO_EXPORT void
+    zm_proto_encode_ok (zm_proto_t *self);
+
+//  Encode ERROR message
+ZM_PROTO_EXPORT void
+    zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description);
+
 //  Self test of this class
 ZM_PROTO_EXPORT void
     zm_proto_utils_test (bool verbose);

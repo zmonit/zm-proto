@@ -128,6 +128,19 @@ ZM_PROTO_EXPORT void
 ZM_PROTO_EXPORT void
     zm_proto_utils_test (bool verbose);
 
+//  Send STREAM DELIVER zm_proto_t message via mlm_client
+ZM_PROTO_EXPORT int
+    zm_proto_send_mlm (zm_proto_t *self, mlm_client_t *client, const char *subject);
+
+//  Send MAILBOX DELIVER zm_proto_t message via mlm_client
+ZM_PROTO_EXPORT int
+    zm_proto_sendto (zm_proto_t *self, mlm_client_t *client, const char *address, const char *subject);
+
+//  Receive zm_proto_t from mlm_client, return -1 and do not touch zm_proto_t
+//  if zm_proto_t was NOT delivered
+ZM_PROTO_EXPORT int
+    zm_proto_recv_mlm (zm_proto_t *self, mlm_client_t *client);
+
 //  @end
 
 #ifdef __cplusplus

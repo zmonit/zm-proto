@@ -321,6 +321,63 @@ zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description)
     zm_proto_set_description (self, description);
 }
 
+//  Send STREAM DELIVER zm_proto_t message via mlm_client
+int
+zm_proto_send_mlm (zm_proto_t *self, mlm_client_t *client, const char *subject)
+{
+    assert (self);
+    assert (client);
+    assert (subject);
+
+    zmsg_t *msg = zmsg_new ();
+    assert (msg);
+    int r = zm_proto_send (self, msg);
+    if (r == -1) {
+        zmsg_destroy (&msg);
+        return -1;
+    }
+
+    return mlm_client_send (client, subject, &msg);
+}
+
+//  Send MAILBOX DELIVER zm_proto_t message via mlm_client
+int
+    zm_proto_sendto (zm_proto_t *self, mlm_client_t *client, const char *address, const char *subject)
+{
+    assert (self);
+    assert (client);
+    assert (address);
+    assert (subject);
+
+    zmsg_t *msg = zmsg_new ();
+    assert (msg);
+    int r = zm_proto_send (self, msg);
+    if (r == -1) {
+        zmsg_destroy (&msg);
+        return -1;
+    }
+
+    return mlm_client_sendto (client, address, subject, NULL, 5000, &msg);
+}
+
+
+//  Receive zm_proto_t from mlm_client, return -1 and do not touch zm_proto_t
+//  if zm_proto_t was NOT delivered
+int
+zm_proto_recv_mlm (zm_proto_t *self, mlm_client_t *client)
+{
+    assert (self);
+    assert (client);
+
+    zmsg_t *msg = mlm_client_recv (client);
+    if (!msg)
+        return -1;
+
+    int r = zm_proto_recv (self, msg);
+    zmsg_destroy (&msg);
+    return r;
+}
+
 //  --------------------------------------------------------------------------
 //  Self test of this class
 

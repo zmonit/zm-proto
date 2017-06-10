@@ -308,7 +308,7 @@ zm_proto_encode_ok (zm_proto_t *self)
 {
     assert (self);
 
-    s_zm_proto_encode_common (self, ZM_PROTO_OK, NULL, 0, 0, NULL);
+    s_zm_proto_encode_common (self, ZM_PROTO_OK, "", 0, 0, NULL);
 }
 
 void
@@ -316,7 +316,7 @@ zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description)
 {
     assert (self);
 
-    s_zm_proto_encode_common (self, ZM_PROTO_ERROR, NULL, 0, 0, NULL);
+    s_zm_proto_encode_common (self, ZM_PROTO_ERROR, "", 0, 0, NULL);
     zm_proto_set_code (self, code);
     zm_proto_set_description (self, description);
 }
@@ -371,6 +371,23 @@ zm_proto_utils_test (bool verbose)
         zm_proto_destroy (&self);
         zmsg_destroy (&msg);
         zhash_destroy (&ext);
+    }
+
+    {
+    // Test OK/ERROR
+        zm_proto_t *self = zm_proto_new ();
+
+        zm_proto_encode_ok (self);
+        assert (zm_proto_id (self) == ZM_PROTO_OK);
+        assert (streq (zm_proto_device (self), ""));
+
+        zm_proto_encode_error (self, 42, "testing error");
+        assert (zm_proto_id (self) == ZM_PROTO_ERROR);
+        assert (streq (zm_proto_device (self), ""));
+        assert (zm_proto_code (self) == 42);
+        assert (streq (zm_proto_description (self), "testing error"));
+
+        zm_proto_destroy (&self);
     }
     //  @end
     printf ("OK\n");

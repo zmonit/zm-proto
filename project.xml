@@ -5,10 +5,13 @@
     email = "N/A"
     repository = "https://github.com/zmonit/zm-proto"
     header = "zmproto.h"
+    license = "MPL-2.0"
     >
 
     <target name = "travis" />
     <target name = "redhat" />
+    <target name = "debian" />
+    <target name = "python_cffi" />
 
     <include filename = "license.xml" />
     <version major = "1" minor = "0" patch = "0" />

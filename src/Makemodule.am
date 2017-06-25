@@ -70,6 +70,11 @@ src_zm_proto_selftest_LDADD = ${program_libs}
 src_zm_proto_selftest_SOURCES = src/zm_proto_selftest.c
 endif #ENABLE_ZM_PROTO_SELFTEST
 
+# Install api files into /usr/local/share/zproject
+apidir = @datadir@/zproject/zm-proto
+dist_api_DATA = \
+    api/zm_proto.api
+
 # define custom target for all products of /src
 src: \
 		src/zmpub \

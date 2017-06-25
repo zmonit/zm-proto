@@ -23,6 +23,7 @@
 
 #ifndef ZM_PROTO_H_INCLUDED
 #define ZM_PROTO_H_INCLUDED
+#include "zm_proto_library.h"
 
 /*  These are the zm_proto messages:
 
@@ -65,16 +66,6 @@
         description         string      Error description.
 */
 
-#define ZM_PROTO_METRIC_STREAM              "METRICS"
-#define ZM_PROTO_ALERT_STREAM               "ALERTS"
-#define ZM_PROTO_DEVICE_STREAM              "DEVICES"
-
-#define ZM_PROTO_METRIC                     1
-#define ZM_PROTO_ALERT                      2
-#define ZM_PROTO_DEVICE                     3
-#define ZM_PROTO_OK                         4
-#define ZM_PROTO_ERROR                      5
-
 #include <czmq.h>
 
 #ifdef __cplusplus
@@ -92,9 +83,9 @@ typedef struct _zm_proto_t zm_proto_t;
 //  @interface
 //  This is a stable class, and may not change except for emergencies. It
 //  is provided in stable builds.
-#define ZM_PROTO_METRIC_STREAM metrics      // 
-#define ZM_PROTO_ALERT_STREAM alerts        // 
-#define ZM_PROTO_DEVICE_STREAM devices      // 
+#define ZM_PROTO_METRIC_STREAM "METRICS"      // 
+#define ZM_PROTO_ALERT_STREAM "ALERTS"        // 
+#define ZM_PROTO_DEVICE_STREAM "DEVICES"      // 
 #define ZM_PROTO_METRIC 1                   // 
 #define ZM_PROTO_ALERT 2                    // 
 #define ZM_PROTO_DEVICE 3                   // 
@@ -114,7 +105,7 @@ ZM_PROTO_EXPORT void
     zm_proto_destroy (zm_proto_t **self_p);
 
 //  Create a deep copy of a zm_proto instance
-ZM_PROTO_EXPORT void
+ZM_PROTO_EXPORT zm_proto_t*
     zm_proto_dup (zm_proto_t *self);
 
 //  Deserialize a zm_proto from the specified message, popping          

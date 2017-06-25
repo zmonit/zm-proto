@@ -1651,7 +1651,7 @@ zm_proto_set_description (zm_proto_t *self, const char *value)
 //  --------------------------------------------------------------------------
 //  Get/set the code field
 
-uint16_t
+uint32_t
 zm_proto_code (zm_proto_t *self)
 {
     assert (self);
@@ -1659,7 +1659,7 @@ zm_proto_code (zm_proto_t *self)
 }
 
 void
-zm_proto_set_code (zm_proto_t *self, uint16_t code)
+zm_proto_set_code (zm_proto_t *self, uint32_t code)
 {
     assert (self);
     self->code = code;

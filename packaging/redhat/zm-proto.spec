@@ -109,8 +109,8 @@ Requires:  python = %{py2_ver}
 This package contains Python CFFI bindings for zm-proto
 
 %files -n python2-zm-proto_cffi
-%{_libdir}/python%{py2_ver}/site-packages/czmq_cffi/
-%{_libdir}/python%{py2_ver}/site-packages/czmq_cffi-*-py%{py2_ver}.egg-info/
+%{_libdir}/python%{py2_ver}/site-packages/zm-proto_cffi/
+%{_libdir}/python%{py2_ver}/site-packages/zm-proto_cffi-*-py%{py2_ver}.egg-info/
 
 %package -n python3-zm-proto_cffi
 Group:  Python
@@ -121,8 +121,8 @@ Requires:  python3 = %{py2_ver}
 This package contains Python 3 CFFI bindings for zm-proto
 
 %files -n python3-zm-proto_cffi
-%{_libdir}/python%{py3_ver}/site-packages/czmq_cffi/
-%{_libdir}/python%{py3_ver}/site-packages/czmq_cffi-*-py%{py3_ver}.egg-info/
+%{_libdir}/python%{py3_ver}/site-packages/zm-proto_cffi/
+%{_libdir}/python%{py3_ver}/site-packages/zm-proto_cffi-*-py%{py3_ver}.egg-info/
 %endif
 
 %prep
@@ -142,11 +142,11 @@ sh autogen.sh
 make %{_smp_mflags}
 
 %if %{with python_cffi}
-# Problem: we need pkg-config points to built and not yet installed copy of czmq
+# Problem: we need pkg-config points to built and not yet installed copy of zm-proto
 # Solution: chicken-egg problem - let's make "fake" pkg-config file
 sed -e "s@^libdir.*@libdir=`pwd`/src/.libs@" \
     -e "s@^includedir.*@includedir=`pwd`/include@" \
-    src/libczmq.pc > bindings/python_cffi/libczmq.pc
+    src/libzm_proto.pc > bindings/python_cffi/libzm_proto.pc
 cd bindings/python_cffi
 export PKG_CONFIG_PATH=`pwd`
 python2 setup.py build

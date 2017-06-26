@@ -1,0 +1,4 @@
+usr/include/*
+usr/lib/*/libzm_proto.so
+usr/lib/*/pkgconfig/libzm_proto.pc
+usr/share/zproject

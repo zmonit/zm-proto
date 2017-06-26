@@ -48,7 +48,7 @@ The following ABNF grammar defines the Basic messaging for zmon.it:
     time            = number-8              ; Time when message was generated
     ttl             = number-4              ; Time to live, after $current time > time - ttl, message is droped
     ext             = hash                  ; Additional extended informations for the message
-    code            = number-2              ; (HTTP?) Error code
+    code            = number-4              ; (HTTP?) Error code
     description     = string                ; Error description.
 
     ; A list of name/value pairs
@@ -63,6 +63,5 @@ The following ABNF grammar defines the Basic messaging for zmon.it:
 
     ; Numbers are unsigned integers in network byte order
     number-1        = 1OCTET
-    number-2        = 2OCTET
     number-4        = 4OCTET
     number-8        = 8OCTET

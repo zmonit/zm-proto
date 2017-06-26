@@ -22,8 +22,8 @@ if [ "$BUILD_TYPE" == "default" ]; then
     cd -
 elif [ "$BUILD_TYPE" == "bindings" ] && [ "$BINDING" == "jni" ]; then
     ( cd bindings/jni && TERM=dumb PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./gradlew clean bintrayUpload )
-    cp bindings/jni/android/zm_proto-android.jar zm_proto-android-1.0.0.jar
-    export ZM_PROTO_DEPLOYMENT=zm_proto-android-1.0.0.jar
+    cp bindings/jni/android/zm_proto-android.jar zm_proto-android-0.1.0.jar
+    export ZM_PROTO_DEPLOYMENT=zm_proto-android-0.1.0.jar
 else
     export ZM_PROTO_DEPLOYMENT=""
 fi

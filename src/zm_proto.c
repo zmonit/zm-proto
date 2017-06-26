@@ -52,7 +52,7 @@ struct _zm_proto_t {
     char rule [256];                    //  Identifier of the rule which triggers this alert.
     byte severity;                      //  Alert is present and critical (value > 0) or resolved (value 0).
     char description [256];             //  Alert description.
-    uint16_t code;                      //  (HTTP?) Error code
+    uint32_t code;                      //  (HTTP?) Error code
 };
 
 //  --------------------------------------------------------------------------
@@ -878,7 +878,7 @@ zm_proto_recv (zm_proto_t *self, zmsg_t *input)
                     free (value);
                 }
             }
-            GET_NUMBER2 (self->code);
+            GET_NUMBER4 (self->code);
             GET_STRING (self->description);
             break;
 
@@ -992,7 +992,7 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
                 }
             }
             frame_size += self->ext_bytes;
-            frame_size += 2;            //  code
+            frame_size += 4;            //  code
             frame_size += 1 + strlen (self->description);
             break;
     }
@@ -1092,7 +1092,7 @@ zm_proto_send (zm_proto_t *self, zmsg_t *output)
             }
             else
                 PUT_NUMBER4 (0);    //  Empty hash
-            PUT_NUMBER2 (self->code);
+            PUT_NUMBER4 (self->code);
             PUT_STRING (self->description);
             break;
 

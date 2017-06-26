@@ -9,7 +9,7 @@ setup(
     version = "0.1.0",
     license = "mpl-2.0",
     description = """Python cffi bindings of: basic messaging for zmon.it""",
-    packages = ["zm-proto_cffi", ],
+    packages = ["zm_proto_cffi", ],
     setup_requires=["cffi"],
     cffi_modules=["zm_proto_cffi/build.py:ffibuilder"],
     install_requires=["cffi"],

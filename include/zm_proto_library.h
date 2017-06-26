@@ -25,8 +25,8 @@
 #include <malamute.h>
 
 //  ZM_PROTO version macros for compile-time API detection
-#define ZM_PROTO_VERSION_MAJOR 1
-#define ZM_PROTO_VERSION_MINOR 0
+#define ZM_PROTO_VERSION_MAJOR 0
+#define ZM_PROTO_VERSION_MINOR 1
 #define ZM_PROTO_VERSION_PATCH 0
 
 #define ZM_PROTO_MAKE_VERSION(major, minor, patch) \

@@ -28,7 +28,7 @@
 %endif
 
 Name:           zm-proto
-Version:        1.0.0
+Version:        0.1.0
 Release:        1
 Summary:        basic messaging for zmon.it
 License:        MPL-2.0
@@ -61,24 +61,24 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %description
 zm-proto basic messaging for zmon.it.
 
-%package -n libzm_proto1
+%package -n libzm_proto0
 Group:          System/Libraries
 Summary:        basic messaging for zmon.it shared library
 
-%description -n libzm_proto1
+%description -n libzm_proto0
 This package contains shared library for zm-proto: basic messaging for zmon.it
 
-%post -n libzm_proto1 -p /sbin/ldconfig
-%postun -n libzm_proto1 -p /sbin/ldconfig
+%post -n libzm_proto0 -p /sbin/ldconfig
+%postun -n libzm_proto0 -p /sbin/ldconfig
 
-%files -n libzm_proto1
+%files -n libzm_proto0
 %defattr(-,root,root)
 %{_libdir}/libzm_proto.so.*
 
 %package devel
 Summary:        basic messaging for zmon.it
 Group:          System/Libraries
-Requires:       libzm_proto1 = %{version}
+Requires:       libzm_proto0 = %{version}
 Requires:       zeromq-devel
 Requires:       czmq-devel
 Requires:       malamute-devel

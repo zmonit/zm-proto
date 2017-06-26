@@ -14,8 +14,8 @@
     <target name = "python_cffi" />
 
     <include filename = "license.xml" />
-    <version major = "1" minor = "0" patch = "0" />
-    <abi current = "1" revision = "1" age = "0" />
+    <version major = "0" minor = "1" patch = "0" />
+    <abi current = "0" revision = "1" age = "0" />
 
     <use project = "czmq" />
     <use project = "malamute" />

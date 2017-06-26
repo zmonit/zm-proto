@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name = "zm_proto_cffi",
-    version = "1.0.0",
+    version = "0.1.0",
     license = "mpl-2.0",
     description = """Python cffi bindings of: basic messaging for zmon.it""",
     packages = ["zm-proto_cffi", ],

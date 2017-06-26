@@ -28,7 +28,7 @@ void
     zm_proto_destroy (zm_proto_t **self_p);
 
 // Create a deep copy of a zm_proto instance
-void
+zm_proto_t *
     zm_proto_dup (zm_proto_t *self);
 
 // Deserialize a zm_proto from the specified message, popping          

@@ -44,7 +44,7 @@
 
 <method name = "dup">
     Create a deep copy of a zm_proto instance
-    <return type="zm_proto_t" fresh="1" />
+    <return type="zm_proto" fresh="1" />
 </method>
 
 <method name = "recv">

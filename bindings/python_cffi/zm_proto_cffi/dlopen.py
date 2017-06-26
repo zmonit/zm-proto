@@ -14,9 +14,9 @@ try:
     # load the library.  If we use find_library below, we get the wrong result.
     if os.name == 'posix':
         if sys.platform == 'darwin':
-            libpath = 'libzm_proto.1.dylib'
+            libpath = 'libzm_proto.0.dylib'
         else:
-            libpath = 'libzm_proto.so.1'
+            libpath = 'libzm_proto.so.0'
     elif os.name == 'nt':
         libpath = 'libzm_proto.dll'
     lib = ffi.dlopen(libpath)

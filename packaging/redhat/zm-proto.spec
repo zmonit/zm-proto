@@ -109,8 +109,8 @@ Requires:  python = %{py2_ver}
 This package contains Python CFFI bindings for zm-proto
 
 %files -n python2-zm-proto_cffi
-%{_libdir}/python%{py2_ver}/site-packages/zm-proto_cffi/
-%{_libdir}/python%{py2_ver}/site-packages/zm-proto_cffi-*-py%{py2_ver}.egg-info/
+%{_libdir}/python%{py2_ver}/site-packages/zm_proto_cffi/
+%{_libdir}/python%{py2_ver}/site-packages/zm_proto_cffi-*-py%{py2_ver}.egg-info/
 
 %package -n python3-zm-proto_cffi
 Group:  Python
@@ -121,8 +121,8 @@ Requires:  python3 = %{py2_ver}
 This package contains Python 3 CFFI bindings for zm-proto
 
 %files -n python3-zm-proto_cffi
-%{_libdir}/python%{py3_ver}/site-packages/zm-proto_cffi/
-%{_libdir}/python%{py3_ver}/site-packages/zm-proto_cffi-*-py%{py3_ver}.egg-info/
+%{_libdir}/python%{py3_ver}/site-packages/zm_proto_cffi/
+%{_libdir}/python%{py3_ver}/site-packages/zm_proto_cffi-*-py%{py3_ver}.egg-info/
 %endif
 
 %prep

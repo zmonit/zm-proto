@@ -100,27 +100,27 @@ This package contains development files for zm-proto: basic messaging for zmon.i
 %{_datadir}/zproject/zm-proto/*.api
 
 %if %{with python_cffi}
-%package -n python2-zm-proto_cffi
+%package -n python2-zm-proto-cffi
 Group:  Python
 Summary:    Python CFFI bindings for zm-proto
 Requires:  python = %{py2_ver}
 
-%description -n python2-zm-proto_cffi
+%description -n python2-zm-proto-cffi
 This package contains Python CFFI bindings for zm-proto
 
-%files -n python2-zm-proto_cffi
+%files -n python2-zm-proto-cffi
 %{_libdir}/python%{py2_ver}/site-packages/zm_proto_cffi/
 %{_libdir}/python%{py2_ver}/site-packages/zm_proto_cffi-*-py%{py2_ver}.egg-info/
 
-%package -n python3-zm-proto_cffi
+%package -n python3-zm-proto-cffi
 Group:  Python
 Summary:    Python 3 CFFI bindings for zm-proto
 Requires:  python3 = %{py2_ver}
 
-%description -n python3-zm-proto_cffi
+%description -n python3-zm-proto-cffi
 This package contains Python 3 CFFI bindings for zm-proto
 
-%files -n python3-zm-proto_cffi
+%files -n python3-zm-proto-cffi
 %{_libdir}/python%{py3_ver}/site-packages/zm_proto_cffi/
 %{_libdir}/python%{py3_ver}/site-packages/zm_proto_cffi-*-py%{py3_ver}.egg-info/
 %endif

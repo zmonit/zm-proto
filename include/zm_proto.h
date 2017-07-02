@@ -62,7 +62,7 @@
         time                number 8    Time when message was generated
         ttl                 number 4    Time to live, after $current time > time - ttl, message is droped
         ext                 hash        Additional extended informations for the message
-        code                number 2    (HTTP?) Error code
+        code                number 4    (HTTP?) Error code
         description         string      Error description.
 */
 
@@ -83,14 +83,15 @@ typedef struct _zm_proto_t zm_proto_t;
 //  @interface
 //  This is a stable class, and may not change except for emergencies. It
 //  is provided in stable builds.
-#define ZM_PROTO_METRIC_STREAM "METRICS"      // 
-#define ZM_PROTO_ALERT_STREAM "ALERTS"        // 
-#define ZM_PROTO_DEVICE_STREAM "DEVICES"      // 
-#define ZM_PROTO_METRIC 1                   // 
-#define ZM_PROTO_ALERT 2                    // 
-#define ZM_PROTO_DEVICE 3                   // 
-#define ZM_PROTO_OK 4                       // 
-#define ZM_PROTO_ERROR 5                    // 
+#define ZM_PROTO_METRIC_STREAM              "METRICS"
+#define ZM_PROTO_ALERT_STREAM               "ALERTS"
+#define ZM_PROTO_DEVICE_STREAM              "DEVICES"
+
+#define ZM_PROTO_METRIC                     1
+#define ZM_PROTO_ALERT                      2
+#define ZM_PROTO_DEVICE                     3
+#define ZM_PROTO_OK                         4
+#define ZM_PROTO_ERROR                      5
 
 //  Create a new empty zm_proto
 ZM_PROTO_EXPORT zm_proto_t *
@@ -105,7 +106,8 @@ ZM_PROTO_EXPORT void
     zm_proto_destroy (zm_proto_t **self_p);
 
 //  Create a deep copy of a zm_proto instance
-ZM_PROTO_EXPORT zm_proto_t*
+//  Caller owns return value and must destroy it when done.
+ZM_PROTO_EXPORT zm_proto_t *
     zm_proto_dup (zm_proto_t *self);
 
 //  Deserialize a zm_proto from the specified message, popping          
@@ -237,6 +239,83 @@ ZM_PROTO_EXPORT uint32_t
 //  Set the code field
 ZM_PROTO_EXPORT void
     zm_proto_set_code (zm_proto_t *self, uint32_t code);
+
+//  Get string from ext attribute
+ZM_PROTO_EXPORT const char *
+    zm_proto_ext_string (zm_proto_t *self, const char *name, const char *dflt);
+
+//  Set ext attribute
+ZM_PROTO_EXPORT void
+    zm_proto_ext_set_string (zm_proto_t *self, const char *name, const char *value);
+
+//  Get a number
+ZM_PROTO_EXPORT uint64_t
+    zm_proto_ext_number (zm_proto_t *self, const char *name, uint64_t dflt);
+
+//  Set a number
+ZM_PROTO_EXPORT void
+    zm_proto_ext_set_number (zm_proto_t *self, const char *name, uint64_t value);
+
+//  Get a number
+ZM_PROTO_EXPORT double
+    zm_proto_ext_double (zm_proto_t *self, const char *name, double dflt);
+
+//  Set a number
+ZM_PROTO_EXPORT void
+    zm_proto_ext_set_double (zm_proto_t *self, const char *name, double value);
+
+//  Converts zmsg to zm_proto, this is for compatibility with zproto v1 codec
+//  Caller owns return value and must destroy it when done.
+ZM_PROTO_EXPORT zm_proto_t *
+    zm_proto_decode (zmsg_t **msg_p);
+
+//  V1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+//  Caller owns return value and must destroy it when done.
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_metric_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *type, const char *value, const char *units);
+
+//  V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+//  Caller owns return value and must destroy it when done.
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_device_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext);
+
+//  V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+//  Caller owns return value and must destroy it when done.
+ZM_PROTO_EXPORT zmsg_t *
+    zm_proto_encode_alert_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *rule, uint8_t severity, const char *description);
+
+//  Set zm_proto_t as metric
+ZM_PROTO_EXPORT void
+    zm_proto_encode_metric (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *type, const char *value, const char *units);
+
+//  Set zm_proto_t as device
+ZM_PROTO_EXPORT void
+    zm_proto_encode_device (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext);
+
+//  Set zm_proto_t as alert
+ZM_PROTO_EXPORT void
+    zm_proto_encode_alert (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *rule, uint8_t severity, const char *description);
+
+//  Set zm_proto_t as OK
+ZM_PROTO_EXPORT void
+    zm_proto_encode_ok (zm_proto_t *self);
+
+//  Set zm_proto_t as OK
+ZM_PROTO_EXPORT void
+    zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description);
+
+//  Send STREAM DELIVER zm_proto_t message using mlm_client
+ZM_PROTO_EXPORT int
+    zm_proto_send_mlm (zm_proto_t *self, mlm_client_t *client, const char *subject);
+
+//  Send MAILBOX DELIVER zm_proto_t message using mlm_client
+ZM_PROTO_EXPORT int
+    zm_proto_sendto (zm_proto_t *self, mlm_client_t *client, const char *address, const char *subject);
+
+//  Receive zm_proto_t from mlm_client, return -1 and do not touch zm_proto_t
+//  if zm_proto_t was NOT delivered                                          
+ZM_PROTO_EXPORT int
+    zm_proto_recv_mlm (zm_proto_t *self, mlm_client_t *client);
 
 //  Self test of this class.
 ZM_PROTO_EXPORT void

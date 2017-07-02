@@ -52,8 +52,8 @@ void zm_proto_ext_set_string (zm_proto_t *self, const char *name, const char *va
 //  --------------------------------------------------------------------------
 //  Get long int item from ext attribute
 
-long int
-zm_proto_ext_int (zm_proto_t *self, const char *name, long int dflt)
+uint64_t
+zm_proto_ext_number (zm_proto_t *self, const char *name, uint64_t dflt)
 {
     const char *value = zm_proto_ext_string (self, name, NULL);
     if (! value) return dflt;
@@ -75,12 +75,13 @@ zm_proto_ext_int (zm_proto_t *self, const char *name, long int dflt)
 //  Set long int item in ext attribute
 
 void
-zm_proto_ext_set_int (zm_proto_t *self, const char *name, long int value)
+zm_proto_ext_set_number (zm_proto_t *self, const char *name, uint64_t value)
 {
-    int size = snprintf(NULL, 0, "%li", value);
+    zsys_debug ("set_number: uint64_t %" PRIu64 ", ld=%ld", value, (long int) value);
+    int size = snprintf(NULL, 0, "%" PRIu64, value);
 
     char buffer [size+1];
-    snprintf(buffer, size + 1, "%li", value);
+    snprintf(buffer, size + 1, "%" PRIu64, value);
     zm_proto_ext_set_string (self, name, buffer);
 }
 
@@ -143,8 +144,8 @@ s_zm_proto_encode_common (
     zm_proto_t *self,
     int id,
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext
 )
 {
@@ -192,8 +193,8 @@ void
 zm_proto_encode_metric (
     zm_proto_t *self,
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext,
     const char *type,
     const char *value,
@@ -215,8 +216,8 @@ void
 zm_proto_encode_device(
     zm_proto_t *self,
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext
 )
 {
@@ -228,11 +229,11 @@ void
 zm_proto_encode_alert (
     zm_proto_t *self,
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext,
     const char *rule,
-    char severity,
+    uint8_t severity,
     const char *description
 )
 {
@@ -249,8 +250,8 @@ zm_proto_encode_alert (
 zmsg_t *
 zm_proto_encode_metric_v1 (
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext,
     const char *type,
     const char *value,
@@ -269,8 +270,8 @@ zm_proto_encode_metric_v1 (
 zmsg_t *
 zm_proto_encode_device_v1(
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext
 )
 {
@@ -286,11 +287,11 @@ zm_proto_encode_device_v1(
 zmsg_t *
 zm_proto_encode_alert_v1 (
     const char *device,
-    int64_t time,
-    int32_t ttl,
+    uint64_t time,
+    uint32_t ttl,
     zhash_t *ext,
     const char *rule,
-    char severity,
+    uint8_t severity,
     const char *description
 )
 {
@@ -398,14 +399,14 @@ zm_proto_utils_test (bool verbose)
         zm_proto_ext_set_string (self, "something", "nothing");
         assert (streq (zm_proto_ext_string (self, "something", "value"), "nothing"));
 
-        zm_proto_ext_set_int (self, "num", -45);
-        assert (zm_proto_ext_int (self, "num", 0) == -45);
+        zm_proto_ext_set_number (self, "num", 42);
+        assert (zm_proto_ext_number (self, "num", 0) == 42);
 
         zm_proto_ext_set_double (self, "pi", 3.14159);
         assert (zm_proto_ext_double (self, "pi", 0) == 3.14159);
 
         zm_proto_ext_set_string (self, "errnum", "3invalid");
-        assert (zm_proto_ext_int (self, "errnum", -1) == -1);
+        assert (zm_proto_ext_number (self, "errnum", 0) == 0);
         assert (zm_proto_ext_double (self, "errnum", -1.0) == -1.0);
 
         zm_proto_print (self);

@@ -115,7 +115,7 @@ This package contains Python CFFI bindings for zm-proto
 %package -n python3-zm-proto-cffi
 Group:  Python
 Summary:    Python 3 CFFI bindings for zm-proto
-Requires:  python3 = %{py2_ver}
+Requires:  python3 = %{py3_ver}
 
 %description -n python3-zm-proto-cffi
 This package contains Python 3 CFFI bindings for zm-proto

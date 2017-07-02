@@ -14,6 +14,7 @@ typedef struct _zconfig_t zconfig_t;
 typedef struct _zmsg_t zmsg_t;
 typedef struct _zframe_t zframe_t;
 typedef struct _zhash_t zhash_t;
+typedef struct _mlm_client_t mlm_client_t;
 // CLASS: zm_proto
 // Create a new empty zm_proto
 zm_proto_t *
@@ -159,6 +160,79 @@ uint32_t
 // Set the code field
 void
     zm_proto_set_code (zm_proto_t *self, uint32_t code);
+
+// Get string from ext attribute
+const char *
+    zm_proto_ext_string (zm_proto_t *self, const char *name, const char *dflt);
+
+// Set ext attribute
+void
+    zm_proto_ext_set_string (zm_proto_t *self, const char *name, const char *value);
+
+// Get a number
+uint64_t
+    zm_proto_ext_number (zm_proto_t *self, const char *name, uint64_t dflt);
+
+// Set a number
+void
+    zm_proto_ext_set_number (zm_proto_t *self, const char *name, uint64_t value);
+
+// Get a number
+double
+    zm_proto_ext_double (zm_proto_t *self, const char *name, double dflt);
+
+// Set a number
+void
+    zm_proto_ext_set_double (zm_proto_t *self, const char *name, double value);
+
+// Converts zmsg to zm_proto, this is for compatibility with zproto v1 codec
+zm_proto_t *
+    zm_proto_decode (zmsg_t **msg_p);
+
+// V1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+zmsg_t *
+    zm_proto_encode_metric_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *type, const char *value, const char *units);
+
+// V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+zmsg_t *
+    zm_proto_encode_device_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext);
+
+// V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+zmsg_t *
+    zm_proto_encode_alert_v1 (const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *rule, uint8_t severity, const char *description);
+
+// Set zm_proto_t as metric
+void
+    zm_proto_encode_metric (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *type, const char *value, const char *units);
+
+// Set zm_proto_t as device
+void
+    zm_proto_encode_device (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext);
+
+// Set zm_proto_t as alert
+void
+    zm_proto_encode_alert (zm_proto_t *self, const char *device, uint64_t time, uint32_t ttl, zhash_t *ext, const char *rule, uint8_t severity, const char *description);
+
+// Set zm_proto_t as OK
+void
+    zm_proto_encode_ok (zm_proto_t *self);
+
+// Set zm_proto_t as OK
+void
+    zm_proto_encode_error (zm_proto_t *self, uint32_t code, const char *description);
+
+// Send STREAM DELIVER zm_proto_t message using mlm_client
+int
+    zm_proto_send_mlm (zm_proto_t *self, mlm_client_t *client, const char *subject);
+
+// Send MAILBOX DELIVER zm_proto_t message using mlm_client
+int
+    zm_proto_sendto (zm_proto_t *self, mlm_client_t *client, const char *address, const char *subject);
+
+// Receive zm_proto_t from mlm_client, return -1 and do not touch zm_proto_t
+// if zm_proto_t was NOT delivered                                          
+int
+    zm_proto_recv_mlm (zm_proto_t *self, mlm_client_t *client);
 
 // Self test of this class.
 void

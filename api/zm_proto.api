@@ -188,4 +188,151 @@
     Set the code field
     <argument name = "code" type = "number" size = "4" />
 </method>
+
+<!--
+    MANUALLY ADDED methods, please re-add them on change
+    those are defined in include/zm_proto_utils.h, however are
+    methods of zm_proto itself. However it is not possible in API
+    model to express such posibility.
+-->
+<method name = "ext string">
+    Get string from ext attribute
+    <argument name = "name" type = "string"/>
+    <argument name = "dflt" type = "string" />
+    <return type = "string" />
+</method>
+
+<method name = "ext set string">
+    Set ext attribute
+    <argument name = "name" type = "string"/>
+    <argument name = "value" type = "string" />
+</method>
+
+<method name = "ext number">
+    Get a number
+    <argument name = "name" type = "string" />
+    <argument name = "dflt" type = "number" size = "8" />
+    <return type = "number" size = "8" />
+</method>
+
+<method name = "ext set number">
+    Set a number
+    <argument name = "name" type = "string" />
+    <argument name = "value" type = "number" size = "8" />
+</method>
+
+<method name = "ext double">
+    Get a number
+    <argument name = "name" type = "string" />
+    <argument name = "dflt" type = "real" size = "8" />
+    <return type = "real" size = "8" />
+</method>
+
+<method name = "ext set double">
+    Set a number
+    <argument name = "name" type = "string" />
+    <argument name = "value" type = "real" size = "8" />
+</method>
+
+
+<method name = "decode" singleton = "1" >
+    Converts zmsg to zm_proto, this is for compatibility with zproto v1 codec
+    <argument name = "msg_p" type = "zmsg" by_reference = "1" />
+    <return type = "zm_proto" fresh = "1" />
+</method>
+
+<method name = "encode metric v1" singleton = "1">
+    V1 codec compatibility function, creates zm_proto_t with metric and encode it to zmsg_t
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+    <argument name = "type" type = "string" />
+    <argument name = "value" type = "string" />
+    <argument name = "units" type = "string" />
+    <return type = "zmsg" fresh = "1" />
+</method>
+
+<method name = "encode device v1" singleton = "1">
+    V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+    <return type = "zmsg" fresh = "1" />
+</method>
+
+<method name = "encode alert v1" singleton = "1">
+    V1 codec compatibility function, creates zm_proto_t with device and encode it to zmsg_t
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+    <argument name = "rule" type = "string" />
+    <argument name = "severity" type = "number" size = "1" />
+    <argument name = "description" type = "string" />
+    <return type = "zmsg" fresh = "1" />
+</method>
+
+<method name = "encode metric">
+    Set zm_proto_t as metric
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+    <argument name = "type" type = "string" />
+    <argument name = "value" type = "string" />
+    <argument name = "units" type = "string" />
+</method>
+
+<method name = "encode device">
+    Set zm_proto_t as device
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+</method>
+
+<method name = "encode alert">
+    Set zm_proto_t as alert
+    <argument name = "device" type = "string" />
+    <argument name = "time" type = "number" size = "8" />
+    <argument name = "ttl" type = "number" size = "4" />
+    <argument name = "ext" type = "zhash" />
+    <argument name = "rule" type = "string" />
+    <argument name = "severity" type = "number" size = "1" />
+    <argument name = "description" type = "string" />
+</method>
+
+<method name = "encode ok">
+    Set zm_proto_t as OK
+</method>
+
+<method name = "encode error">
+    Set zm_proto_t as OK
+    <argument name = "code" type = "number" size = "4" />
+    <argument name = "description" type = "string" />
+</method>
+
+<method name = "send mlm">
+    Send STREAM DELIVER zm_proto_t message using mlm_client
+    <argument name = "client" type = "mlm_client" />
+    <argument name = "subject" type = "string" />
+    <return type = "integer" />
+</method>
+
+<method name = "sendto">
+    Send MAILBOX DELIVER zm_proto_t message using mlm_client
+    <argument name = "client" type = "mlm_client" />
+    <argument name = "address" type = "string" />
+    <argument name = "subject" type = "string" />
+    <return type = "integer" />
+</method>
+
+<method name = "recv mlm">
+    Receive zm_proto_t from mlm_client, return -1 and do not touch zm_proto_t
+    if zm_proto_t was NOT delivered
+    <argument name = "client" type = "mlm_client" />
+    <return type = "integer" />
+</method>
 </class>

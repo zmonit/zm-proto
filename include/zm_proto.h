@@ -83,15 +83,14 @@ typedef struct _zm_proto_t zm_proto_t;
 //  @interface
 //  This is a stable class, and may not change except for emergencies. It
 //  is provided in stable builds.
-#define ZM_PROTO_METRIC_STREAM              "METRICS"
-#define ZM_PROTO_ALERT_STREAM               "ALERTS"
-#define ZM_PROTO_DEVICE_STREAM              "DEVICES"
-
-#define ZM_PROTO_METRIC                     1
-#define ZM_PROTO_ALERT                      2
-#define ZM_PROTO_DEVICE                     3
-#define ZM_PROTO_OK                         4
-#define ZM_PROTO_ERROR                      5
+#define ZM_PROTO_METRIC_STREAM metrics      // 
+#define ZM_PROTO_ALERT_STREAM alerts        // 
+#define ZM_PROTO_DEVICE_STREAM devices      // 
+#define ZM_PROTO_METRIC 1                   // 
+#define ZM_PROTO_ALERT 2                    // 
+#define ZM_PROTO_DEVICE 3                   // 
+#define ZM_PROTO_OK 4                       // 
+#define ZM_PROTO_ERROR 5                    // 
 
 //  Create a new empty zm_proto
 ZM_PROTO_EXPORT zm_proto_t *

@@ -12,6 +12,7 @@
     <target name = "redhat" />
     <target name = "debian" />
     <target name = "python_cffi" />
+    <target name = "obs" />
 
     <include filename = "license.xml" />
     <version major = "0" minor = "1" patch = "0" />

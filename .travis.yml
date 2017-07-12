@@ -19,6 +19,15 @@ env:
     - CI_TIME=false
     - CI_TRACE=false
     - CI_CONFIG_QUIET=true
+    # tokens to deploy releases on OBS and create/delete temporary branch on Github.
+    # 1) Create a token on https://github.com/settings/tokens/new with "public_repo"
+    #    capability and encrypt it with travis encrypt --org -r <org>/<repo> GH_TOKEN="<token>"
+    - secure: "UOcXKv0Drm6zlKn+jsf2CtoEDRdGVPz/RJzg6g1VaLp5FGl2MGHD3X7KXrOXIwnrdRg1NrrhauXT7tyDkzYL4ALDHqGKbRnTyDdW5oQd7AhGw+M4Uk2cExY5B1OTVAG/+Yz7NcN9Q892wljMI62ovkmnFCdN6027cPsN7/QwY0VFctl1NC3s1acFs7aPkjX75DH5uvpYnrPMgqJUis7C2VpyKbxmBoQQXE76XwXJHQTRy5XPyaDNluzJccLgNtP0pwzGHVnRQwt7FqBwPHNyeDWviNaiq55spk2SZkfSp/iyoKuI4y3hU9vZvk5pY3C4U2LmBCidBLFrV0hNRV0NQvfE0357Sl4oEa0ivh3X8UUJLfiFBdk8bqBrCfA/EhRX/n3KuRKAIeqF9DYK/gIk0xQjho4wK639B3QuLc9Uh0UiiwnciAgFyGxO3E8kRo7tBnTg4VtgCExfkqOW4UgRjDwz5fHh3nAbX48Je5rMo8acdUOZy5MZKqKq89YACUGx1cPVOSU2Y5NQg5RHhCiah3OUqxUX0W1Y3v9Cpi3n//+MUUAoqKN/uNerrjFV/tgY7GJmVeFc58PmKAUec0mJIYbGa7vL+Zma0WHYNeM4WC9L+eWrcSjkZQUz+hANgXtyqef2BDtQUqP2ZIEMqnlg/G2u9oJeJnSOQqvjpjiP3uY="
+    # 2) Create OBS token with osc token --create home:mvyskocil:zmonit:git-draft
+    #    encrypt them with travis encrypt --org -r <org>/<repo> OBS_DRAFT_TOKEN="<token>"
+    - secure: "TJW4PwcMcAKvAjlI/qFZVgF2Cxs6RfDdVQT5cA4FKlQ55HaPEf9fhIqPBUcb9ZGxmx8gOIpdqir7YCIBmiisfW6r9pBx9XW63mdv8s9pD3uuUK9NB+b9ChlHLk0AgQyPt5P8VzXVCPq3l+EnqjhyQVXZJZjZ4IweYASNCSbMCpfhxxCxpRLLjkhb41/bfF+rDJYmdVzjg+MHkPkYxtaRvnJrB/VeDWXtnaeVpiM09RBe8Mo70O4wK1XJmBbka5hiGIAKLLxmK8r8QXDldsDFTmMYzPJC4cbLQT11fXTAq+hYcLbzlpa73BXkVa1rJu4A6VZZSBo8KKzun2n18BcFY56W+V3Z5mysIkExv0E9voTBXTwwMdQ0gMMmwmk+8K3WvTiNmMoqNGnpeKY1TEjp9uQGYzlbe+FaEI5Cov3sg0KDxjTWXcPiu/fGM2BGsbeamqtavmDPHUE8q139eqKy7mys6L3MHUE2yRgtfWr/pBi0fZu+4cw9qDY+Hco07nKouanR/lbhLd6bTyzXDsjt7tCzlbH9TG5TyLJqFFJ4WkTZ8LFNtRB3f/dAsA3jDzXk14gy5WP+LpEV2UtS51Yc6L7NiQU12StJAoFWWuU9qaE8V5o62LSBxC5eUA3T9dMLIjLEmSvfWL8OXoVUAOkNJUgGDERaPDOZ+eCysWt3sgo="
+
+
   matrix:
     - BUILD_TYPE=default
     - BUILD_TYPE=default-Werror
@@ -58,7 +67,7 @@ before_install:
 
 # Hand off to generated script for each BUILD_TYPE
 script: ./ci_build.sh
-before_deploy: . ./ci_deploy.sh
+before_deploy: . ./ci_deploy.sh && ./ci_deploy_obs.sh
 deploy:
   provider: releases
   api_key:
